@@ -7,9 +7,19 @@
   <h3>Latest</h3>
   <ul>
     {% for article in latest %}
-      <li><a href="{{ url_for('article_detail', article_id=article.id) }}">{{ article.title }}</a></li>
+      <li>
+        {% if article.slug %}
+          <a href="{{ url_for('article_by_slug', slug=article.slug) }}">{{ article.title }}</a>
+        {% else %}
+          <a href="{{ url_for('article_detail', article_id=article.id) }}">{{ article.title }}</a>
+        {% endif %}
+      </li>
     {% else %}
-      <li>No articles yet. <a href="{{ url_for('create') }}">Create one</a>.</li>
+      <li>No articles yet.
+        {% if current_user.is_authenticated %}
+          <a href="{{ url_for('create') }}">Create one</a>.
+        {% endif %}
+      </li>
     {% endfor %}
   </ul>
 {% endblock %}

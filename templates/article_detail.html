@@ -3,12 +3,19 @@
 
 {% block content %}
   <h1>{{ article.title }}</h1>
-  <p class="text-muted">{{ article.tags }}</p>
+  <p class="text-muted">
+    {% for t in article.tags.split(",") if t.strip() %}
+      <a class="badge text-bg-secondary text-decoration-none"
+         href="{{ url_for('by_tag', tag=t.strip()) }}">{{ t.strip() }}</a>
+    {% endfor %}
+  </p>
   <hr>
   <div style="white-space: pre-wrap;">{{ article.body_html | safe }}</div>
 
-  <a class="btn btn-primary" href="{{ url_for('edit', article_id=article.id) }}">✏️ Edit</a>
-  <form action="{{ url_for('delete', article_id=article.id) }}" method="post" style="display:inline">
-    <button class="btn btn-danger" onclick="return confirm('Delete this article?')">🗑️ Delete</button>
-  </form>
+  {% if current_user.is_authenticated %}
+    <a class="btn btn-primary" href="{{ url_for('edit', article_id=article.id) }}">✏️ Edit</a>
+    <form action="{{ url_for('delete', article_id=article.id) }}" method="post" style="display:inline">
+      <button type="submit" class="btn btn-danger">🗑️ Delete</button>
+    </form>
+  {% endif %}
 {% endblock %}

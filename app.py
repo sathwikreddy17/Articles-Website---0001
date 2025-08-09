@@ -1,8 +1,12 @@
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
 from flask import Flask, render_template, redirect, url_for, request, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import FlaskForm
-from wtforms import StringField, TextAreaField
-from wtforms.validators import DataRequired, Length
+from wtforms import StringField, TextAreaField, PasswordField, BooleanField
+from wtforms.validators import DataRequired, Length, Email, EqualTo
 import markdown
 from markdown.extensions.codehilite import CodeHiliteExtension
 from flask_login import (
@@ -11,13 +15,13 @@ from flask_login import (
 )
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_migrate import Migrate
-from wtforms import StringField, TextAreaField, PasswordField, BooleanField
-from wtforms.validators import DataRequired, Length, Email, EqualTo
-
+import re
+from unicodedata import normalize
+from typing import Optional
 
 app = Flask(__name__)
-app.config["SECRET_KEY"] = "dev-secret-change-later"
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///site.db"
+app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev-secret-change-later")
+app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL", "sqlite:///site.db")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db = SQLAlchemy(app)
@@ -29,10 +33,11 @@ migrate = Migrate(app, db)
 
 # ---------- Models ----------
 class Article(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
+    id    = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
-    body = db.Column(db.Text, nullable=False)
-    tags = db.Column(db.String(200), default="")  # comma-separated for now
+    body  = db.Column(db.Text, nullable=False)
+    tags  = db.Column(db.String(255))
+    slug  = db.Column(db.String(255), unique=True, nullable=False)
 
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
@@ -66,6 +71,27 @@ class LoginForm(FlaskForm):
     password = PasswordField("Password", validators=[DataRequired()])
     remember = BooleanField("Remember me")
 
+# ---------- Helper Functions ----------
+def slugify(text: str) -> str:
+    # basic, dependency‑free slugify
+    text = normalize("NFKD", text).encode("ascii", "ignore").decode("ascii")
+    text = re.sub(r"[^\w\s-]", "", text).strip().lower()
+    text = re.sub(r"[-\s]+", "-", text)
+    return text or "post"
+
+def unique_slug(title: str, existing_id: Optional[int] = None) -> str:
+    base = slugify(title)
+    slug = base
+    n = 2
+    while True:
+        q = Article.query.filter_by(slug=slug)
+        if existing_id:
+            q = q.filter(Article.id != existing_id)
+        if q.first() is None:
+            return slug
+        slug = f"{base}-{n}"
+        n += 1
+
 # ---------- Routes ----------
 @app.route("/")
 def home():
@@ -81,15 +107,18 @@ def articles():
     items = Article.query.order_by(Article.id.desc()).all()
     return render_template("articles.html", items=items)
 
+@app.route("/a/<slug>")
+def article_by_slug(slug):
+    article = Article.query.filter_by(slug=slug).first_or_404()
+    article.body_html = markdown.markdown(
+        article.body, extensions=["fenced_code", CodeHiliteExtension(linenums=False)]
+    )
+    return render_template("article_detail.html", article=article)
+
 @app.route("/article/<int:article_id>")
 def article_detail(article_id):
     article = Article.query.get_or_404(article_id)
-    # Convert Markdown body to HTML (supports fenced code + highlighting)
-    article.body_html = markdown.markdown(
-        article.body,
-        extensions=["fenced_code", CodeHiliteExtension(linenums=False)]
-    )
-    return render_template("article_detail.html", article=article)
+    return redirect(url_for("article_by_slug", slug=article.slug or article.id))
 
 ## Removed placeholder routes for create, edit, delete
 
@@ -101,12 +130,13 @@ def create():
         article = Article(
             title=form.title.data.strip(),
             body=form.body.data.strip(),
-            tags=form.tags.data.strip()
+            tags=form.tags.data.strip(),
         )
+        article.slug = unique_slug(article.title)
         db.session.add(article)
         db.session.commit()
         flash("Article created!", "success")
-        return redirect(url_for("articles"))
+        return redirect(url_for("article_by_slug", slug=article.slug))
     return render_template("create.html", form=form)
 
 @app.route("/edit/<int:article_id>", methods=["GET", "POST"])
@@ -115,12 +145,14 @@ def edit(article_id):
     article = Article.query.get_or_404(article_id)
     form = ArticleForm(obj=article)  # prefill
     if form.validate_on_submit():
-        article.title = form.title.data.strip()
+        new_title = form.title.data.strip()
+        article.title = new_title
         article.tags  = form.tags.data.strip()
         article.body  = form.body.data.strip()
+        article.slug  = unique_slug(new_title, existing_id=article.id)
         db.session.commit()
         flash("Article updated!", "success")
-        return redirect(url_for("article_detail", article_id=article.id))
+        return redirect(url_for("article_by_slug", slug=article.slug))
     return render_template("edit.html", form=form, article=article)
 
 @app.route("/delete/<int:article_id>", methods=["POST"])
@@ -171,6 +203,14 @@ def logout():
     logout_user()
     flash("Logged out.", "info")
     return redirect(url_for("home"))
+
+@app.route("/tags/<tag>")
+def by_tag(tag):
+    items = (Article.query
+             .filter(Article.tags.ilike(f"%{tag}%"))
+             .order_by(Article.id.desc())
+             .all())
+    return render_template("articles.html", items=items, active_tag=tag)
 
 # ---------- Run ----------
 if __name__ == "__main__":

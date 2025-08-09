@@ -3,19 +3,28 @@
 {% block content %}
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h1 class="mb-0">All Articles</h1>
-    <a class="btn btn-primary" href="{{ url_for('create') }}">New Article</a>
+    {% if active_tag %}
+      <h6 class="text-muted">Tag: {{ active_tag }}</h6>
+    {% endif %}
+    {% if current_user.is_authenticated %}
+      <a class="btn btn-primary" href="{{ url_for('create') }}">New Article</a>
+    {% endif %}
   </div>
 
   {% if items %}
     <ul class="list-group">
       {% for a in items %}
         <li class="list-group-item d-flex justify-content-between align-items-center">
-          <a href="{{ url_for('article_detail', article_id=a.id) }}">{{ a.title }}</a>
+          <a href="{{ url_for('article_by_slug', slug=a.slug) if a.slug else url_for('article_detail', article_id=a.id) }}">{{ a.title }}</a>
           <small class="text-muted">{{ a.tags }}</small>
         </li>
       {% endfor %}
     </ul>
   {% else %}
-    <p>No articles yet. <a href="{{ url_for('create') }}">Create one</a>.</p>
+    <p>No articles yet.
+      {% if current_user.is_authenticated %}
+        <a href="{{ url_for('create') }}">Create one</a>.
+      {% endif %}
+    </p>
   {% endif %}
 {% endblock %}
