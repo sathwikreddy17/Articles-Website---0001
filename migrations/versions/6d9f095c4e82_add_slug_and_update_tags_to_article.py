@@ -74,3 +74,6 @@ def downgrade():
         batch_op.drop_column('slug')
 
     # ### end Alembic commands ###
+
+
+## Removed invalid user promotion and app import code. Migration files should only contain schema changes.

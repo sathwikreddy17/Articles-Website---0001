@@ -43,6 +43,7 @@ class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(255), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
+    is_admin = db.Column(db.Boolean, nullable=False, default=False)  # NEW
 
     def set_password(self, password: str):
         self.password_hash = generate_password_hash(password, method='pbkdf2:sha256')
@@ -72,6 +73,18 @@ class LoginForm(FlaskForm):
     remember = BooleanField("Remember me")
 
 # ---------- Helper Functions ----------
+from functools import wraps
+from flask import abort
+from flask_login import current_user, login_required
+
+def admin_required(f):
+    @wraps(f)
+    @login_required
+    def wrapper(*args, **kwargs):
+        if not current_user.is_admin:
+            abort(403)
+        return f(*args, **kwargs)
+    return wrapper
 def slugify(text: str) -> str:
     # basic, dependency‑free slugify
     text = normalize("NFKD", text).encode("ascii", "ignore").decode("ascii")
@@ -123,7 +136,7 @@ def article_detail(article_id):
 ## Removed placeholder routes for create, edit, delete
 
 @app.route("/create", methods=["GET", "POST"])
-@login_required
+@admin_required
 def create():
     form = ArticleForm()
     if form.validate_on_submit():
@@ -140,7 +153,7 @@ def create():
     return render_template("create.html", form=form)
 
 @app.route("/edit/<int:article_id>", methods=["GET", "POST"])
-@login_required
+@admin_required
 def edit(article_id):
     article = Article.query.get_or_404(article_id)
     form = ArticleForm(obj=article)  # prefill
@@ -156,7 +169,7 @@ def edit(article_id):
     return render_template("edit.html", form=form, article=article)
 
 @app.route("/delete/<int:article_id>", methods=["POST"])
-@login_required
+@admin_required
 def delete(article_id):
     article = Article.query.get_or_404(article_id)
     db.session.delete(article)

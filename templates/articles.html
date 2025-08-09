@@ -6,7 +6,7 @@
     {% if active_tag %}
       <h6 class="text-muted">Tag: {{ active_tag }}</h6>
     {% endif %}
-    {% if current_user.is_authenticated %}
+    {% if current_user.is_authenticated and current_user.is_admin %}
       <a class="btn btn-primary" href="{{ url_for('create') }}">New Article</a>
     {% endif %}
   </div>
