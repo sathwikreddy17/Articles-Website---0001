@@ -1,11 +1,14 @@
 {% extends "base.html" %}
-{% block title %}{{ item.title }}{% endblock %}
+{% block title %}{{ article.title }}{% endblock %}
+
 {% block content %}
-  <h1>{{ item.title }}</h1>
-  <p class="text-muted">{{ item.tags }}</p>
+  <h1>{{ article.title }}</h1>
+  <p class="text-muted">{{ article.tags }}</p>
   <hr>
-  <p style="white-space: pre-wrap">{{ item.body }}</p>
-  <form action="{{ url_for('delete', article_id=item.id) }}" method="post" class="mt-4">
-    <button class="btn btn-outline-danger" onclick="return confirm('Delete this article?');">Delete</button>
+  <div style="white-space: pre-wrap;">{{ article.body_html | safe }}</div>
+
+  <a class="btn btn-primary" href="{{ url_for('edit', article_id=article.id) }}">✏️ Edit</a>
+  <form action="{{ url_for('delete', article_id=article.id) }}" method="post" style="display:inline">
+    <button class="btn btn-danger" onclick="return confirm('Delete this article?')">🗑️ Delete</button>
   </form>
 {% endblock %}

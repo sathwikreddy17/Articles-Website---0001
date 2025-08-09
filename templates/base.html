@@ -12,13 +12,35 @@
 <nav class="navbar navbar-dark bg-dark mb-4">
   <div class="container">
     <a class="navbar-brand" href="{{ url_for('home') }}">Articles</a>
-    <div class="d-flex gap-3">
-      <a class="nav-link" href="{{ url_for('home') }}">Home</a>
-      <a class="nav-link" href="{{ url_for('articles') }}">All Articles</a>
-      <a class="nav-link" href="{{ url_for('about') }}">About</a>
-    </div>
+    <ul class="navbar-nav flex-row gap-3">
+      <li class="nav-item"><a class="nav-link" href="{{ url_for('home') }}">Home</a></li>
+      <li class="nav-item"><a class="nav-link" href="{{ url_for('articles') }}">All Articles</a></li>
+      <li class="nav-item"><a class="nav-link" href="{{ url_for('about') }}">About</a></li>
+
+      {% if current_user.is_authenticated %}
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('create') }}">New</a></li>
+        <li class="nav-item"><span class="navbar-text text-white-50">Hi, {{ current_user.email }}</span></li>
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('logout') }}">Logout</a></li>
+      {% else %}
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('login') }}">Login</a></li>
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('register') }}">Register</a></li>
+      {% endif %}
+    </ul>
   </div>
 </nav>
+
+<div class="container mt-3">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+</div>
 <main class="container">{% block content %}{% endblock %}</main>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>

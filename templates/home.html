@@ -6,8 +6,8 @@
   <hr>
   <h3>Latest</h3>
   <ul>
-    {% for a in latest %}
-      <li><a href="{{ url_for('article_detail', article_id=a.id) }}">{{ a.title }}</a></li>
+    {% for article in latest %}
+      <li><a href="{{ url_for('article_detail', article_id=article.id) }}">{{ article.title }}</a></li>
     {% else %}
       <li>No articles yet. <a href="{{ url_for('create') }}">Create one</a>.</li>
     {% endfor %}

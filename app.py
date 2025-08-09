@@ -3,13 +3,29 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import FlaskForm
 from wtforms import StringField, TextAreaField
 from wtforms.validators import DataRequired, Length
+import markdown
+from markdown.extensions.codehilite import CodeHiliteExtension
+from flask_login import (
+    LoginManager, login_user, logout_user,
+    login_required, current_user, UserMixin
+)
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask_migrate import Migrate
+from wtforms import StringField, TextAreaField, PasswordField, BooleanField
+from wtforms.validators import DataRequired, Length, Email, EqualTo
+
 
 app = Flask(__name__)
-app.config["SECRET_KEY"] = "dev-secret-change-later"        # fine for local
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///site.db" # local DB file
+app.config["SECRET_KEY"] = "dev-secret-change-later"
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///site.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db = SQLAlchemy(app)
+login_manager = LoginManager(app)
+login_manager.login_view = "login"              # where to send anonymous users
+login_manager.login_message_category = "warning"
+
+migrate = Migrate(app, db)
 
 # ---------- Models ----------
 class Article(db.Model):
@@ -18,11 +34,37 @@ class Article(db.Model):
     body = db.Column(db.Text, nullable=False)
     tags = db.Column(db.String(200), default="")  # comma-separated for now
 
+class User(db.Model, UserMixin):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(255), unique=True, nullable=False)
+    password_hash = db.Column(db.String(255), nullable=False)
+
+    def set_password(self, password: str):
+        self.password_hash = generate_password_hash(password, method='pbkdf2:sha256')
+
+    def check_password(self, password: str) -> bool:
+        return check_password_hash(self.password_hash, password)
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
 # ---------- Forms ----------
 class ArticleForm(FlaskForm):
     title = StringField("Title", validators=[DataRequired(), Length(max=200)])
     tags  = StringField("Tags (comma-separated)")
     body  = TextAreaField("Body", validators=[DataRequired()])
+
+class RegisterForm(FlaskForm):
+    email = StringField("Email", validators=[DataRequired(), Email()])
+    password = PasswordField("Password", validators=[DataRequired(), Length(min=6)])
+    confirm = PasswordField("Confirm password",
+                            validators=[DataRequired(), EqualTo("password")])
+
+class LoginForm(FlaskForm):
+    email = StringField("Email", validators=[DataRequired(), Email()])
+    password = PasswordField("Password", validators=[DataRequired()])
+    remember = BooleanField("Remember me")
 
 # ---------- Routes ----------
 @app.route("/")
@@ -41,31 +83,97 @@ def articles():
 
 @app.route("/article/<int:article_id>")
 def article_detail(article_id):
-    item = Article.query.get_or_404(article_id)
-    return render_template("article_detail.html", item=item)
+    article = Article.query.get_or_404(article_id)
+    # Convert Markdown body to HTML (supports fenced code + highlighting)
+    article.body_html = markdown.markdown(
+        article.body,
+        extensions=["fenced_code", CodeHiliteExtension(linenums=False)]
+    )
+    return render_template("article_detail.html", article=article)
 
-@app.route("/create", methods=["GET","POST"])
+## Removed placeholder routes for create, edit, delete
+
+@app.route("/create", methods=["GET", "POST"])
+@login_required
 def create():
     form = ArticleForm()
     if form.validate_on_submit():
-        a = Article(title=form.title.data.strip(),
-                    body=form.body.data.strip(),
-                    tags=form.tags.data.strip())
-        db.session.add(a)
+        article = Article(
+            title=form.title.data.strip(),
+            body=form.body.data.strip(),
+            tags=form.tags.data.strip()
+        )
+        db.session.add(article)
         db.session.commit()
         flash("Article created!", "success")
         return redirect(url_for("articles"))
     return render_template("create.html", form=form)
 
+@app.route("/edit/<int:article_id>", methods=["GET", "POST"])
+@login_required
+def edit(article_id):
+    article = Article.query.get_or_404(article_id)
+    form = ArticleForm(obj=article)  # prefill
+    if form.validate_on_submit():
+        article.title = form.title.data.strip()
+        article.tags  = form.tags.data.strip()
+        article.body  = form.body.data.strip()
+        db.session.commit()
+        flash("Article updated!", "success")
+        return redirect(url_for("article_detail", article_id=article.id))
+    return render_template("edit.html", form=form, article=article)
+
 @app.route("/delete/<int:article_id>", methods=["POST"])
+@login_required
 def delete(article_id):
-    item = Article.query.get_or_404(article_id)
-    db.session.delete(item)
+    article = Article.query.get_or_404(article_id)
+    db.session.delete(article)
     db.session.commit()
     flash("Deleted.", "info")
-    return redirect(url_for("articles"))
+    
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if current_user.is_authenticated:
+        return redirect(url_for("articles"))
+    form = RegisterForm()
+    if form.validate_on_submit():
+        if User.query.filter_by(email=form.email.data.lower()).first():
+            flash("Email is already registered.", "danger")
+            return redirect(url_for("register"))
+        user = User(email=form.email.data.lower())
+        user.set_password(form.password.data)
+        db.session.add(user)
+        db.session.commit()
+        login_user(user)  # auto‑login after register
+        flash("Welcome! Account created.", "success")
+        return redirect(url_for("articles"))
+    return render_template("register.html", form=form)
 
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for("articles"))
+    form = LoginForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data.lower()).first()
+        if not user or not user.check_password(form.password.data):
+            flash("Invalid email or password.", "danger")
+            return redirect(url_for("login"))
+        login_user(user, remember=form.remember.data)
+        flash("Logged in.", "success")
+        next_url = request.args.get("next")
+        return redirect(next_url or url_for("articles"))
+    return render_template("login.html", form=form)
+
+@app.route("/logout")
+@login_required
+def logout():
+    logout_user()
+    flash("Logged out.", "info")
+    return redirect(url_for("home"))
+
+# ---------- Run ----------
 if __name__ == "__main__":
-    with app.app_context():
-        db.create_all()  # creates site.db if missing
+    # with app.app_context():
+    #     db.create_all()
     app.run(debug=True)
