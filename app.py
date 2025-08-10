@@ -261,8 +261,24 @@ def by_tag(tag):
     return render_template("articles.html", items=items, active_tag=tag)
 
 
+@app.route("/healthz")
+def healthz():
+    return "ok", 200
+
+
 # ---------- Run ----------
 if __name__ == "__main__":
     # with app.app_context():
     #     db.create_all()
     app.run(debug=True)
+
+# Run Alembic migrations automatically on boot when enabled
+if os.getenv("AUTO_MIGRATE", "0") == "1":
+    try:
+        from flask_migrate import upgrade as _upgrade
+
+        with app.app_context():
+            _upgrade()  # migrate to latest revision
+            print("✅ Auto-migration complete.")
+    except Exception as e:
+        print(f"⚠️ Auto-migration failed: {e}")
