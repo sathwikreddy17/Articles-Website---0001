@@ -269,6 +269,25 @@ def healthz():
     return "ok", 200
 
 
+# --- ONE-TIME AUTO MIGRATION ON BOOT (for Render free tier) ---
+if os.getenv("AUTO_MIGRATE", "0") == "1":
+    try:
+        print("🛠 AUTO_MIGRATE=1 -> running Alembic upgrade() ...")
+        from flask_migrate import upgrade as _upgrade
+        with app.app_context():
+            _upgrade()  # apply migrations up to head
+            print("✅ Auto-migration complete.")
+    except Exception as e:
+        # Fallback: create tables if migrations aren't available
+        try:
+            print(f"⚠️ Auto-migration failed: {e}. Falling back to db.create_all() ...")
+            with app.app_context():
+                db.create_all()
+                print("✅ create_all() complete.")
+        except Exception as e2:
+            print(f"❌ create_all() also failed: {e2}")
+
+
 # ---------- Run ----------
 if __name__ == "__main__":
     # with app.app_context():
