@@ -28,8 +28,11 @@ app = Flask(__name__)
 
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev-secret-change-later")
 uri = os.getenv("DATABASE_URL", "sqlite:///site.db")
+# Render / many providers still give postgres:// — fix + select psycopg driver:
 if uri.startswith("postgres://"):
-    uri = uri.replace("postgres://", "postgresql://", 1)
+    uri = uri.replace("postgres://", "postgresql+psycopg://", 1)
+elif uri.startswith("postgresql://"):
+    uri = uri.replace("postgresql://", "postgresql+psycopg://", 1)
 app.config["SQLALCHEMY_DATABASE_URI"] = uri
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
@@ -271,14 +274,3 @@ if __name__ == "__main__":
     # with app.app_context():
     #     db.create_all()
     app.run(debug=True)
-
-# Run Alembic migrations automatically on boot when enabled
-if os.getenv("AUTO_MIGRATE", "0") == "1":
-    try:
-        from flask_migrate import upgrade as _upgrade
-
-        with app.app_context():
-            _upgrade()  # migrate to latest revision
-            print("✅ Auto-migration complete.")
-    except Exception as e:
-        print(f"⚠️ Auto-migration failed: {e}")
