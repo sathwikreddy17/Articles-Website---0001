@@ -20,9 +20,18 @@ from unicodedata import normalize
 from typing import Optional
 
 app = Flask(__name__)
+
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev-secret-change-later")
 app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL", "sqlite:///site.db")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+# Security in production
+if os.getenv("FLASK_ENV") == "production":
+    app.config.update(
+        SESSION_COOKIE_SECURE=True,
+        SESSION_COOKIE_HTTPONLY=True,
+        SESSION_COOKIE_SAMESITE="Lax",
+    )
 
 db = SQLAlchemy(app)
 login_manager = LoginManager(app)
