@@ -22,7 +22,6 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_migrate import Migrate
 from functools import wraps
 
-
 load_dotenv()
 
 app = Flask(__name__)
@@ -51,24 +50,6 @@ login_manager.login_view = "login"  # where to send anonymous users
 login_manager.login_message_category = "warning"
 
 migrate = Migrate(app, db)
-
-
-# ---------- CLI Commands ----------
-@app.cli.command("create-admin")
-@click.argument("email")
-@click.argument("password")
-def create_admin(email, password):
-    """Creates a new admin user."""
-    if User.query.filter_by(email=email).first():
-        print(f"Error: User with email {email} already exists.")
-        return
-
-    user = User(email=email, is_admin=True)
-    user.set_password(password)
-
-    db.session.add(user)
-    db.session.commit()
-    print(f"Admin user {email} created successfully.")
 
 
 # ---------- Models ----------
@@ -186,9 +167,6 @@ def article_detail(article_id):
     return redirect(url_for("article_by_slug", slug=article.slug or article.id))
 
 
-## Removed placeholder routes for create, edit, delete
-
-
 @app.route("/create", methods=["GET", "POST"])
 @admin_required
 def create():
@@ -288,6 +266,51 @@ def healthz():
     return "ok", 200
 
 
+@app.route("/__bootstrap_once")
+def __bootstrap_once():
+    # Only run if explicitly enabled
+    if os.getenv("BOOTSTRAP", "0") != "1":
+        print("BOOTSTRAP is not 1. Aborting.")
+        abort(404)
+
+    admin_email = os.getenv("ADMIN_EMAIL")
+    admin_password = os.getenv("ADMIN_PASSWORD")
+    if not admin_email or not admin_password:
+        return "Missing ADMIN_EMAIL/ADMIN_PASSWORD env vars", 500
+
+    # Create admin if missing
+    if not User.query.filter_by(email=admin_email).first():
+        print(f"Creating admin user: {admin_email}")
+        user = User(email=admin_email, is_admin=True)
+        user.set_password(admin_password)
+        db.session.add(user)
+    else:
+        print(f"Admin user {admin_email} already exists.")
+
+    # Seed a couple articles if table is empty
+    if Article.query.count() == 0:
+        print("Seeding articles...")
+        demo = Article(
+            title="Hello, Render!",
+            body="# Deployed!\n\nThis is **Markdown**. 🎉\n\n```python\nprint('hi')\n```",
+            tags="demo,render,first",
+        )
+        demo.slug = unique_slug(demo.title)
+        db.session.add(demo)
+
+        demo2 = Article(
+            title="Second Post",
+            body="Some more content.\n\n- tags\n- markdown",
+            tags="notes",
+        )
+        demo2.slug = unique_slug(demo2.title)
+        db.session.add(demo2)
+
+    db.session.commit()
+    print("Bootstrap complete.")
+    return "✅ Bootstrap complete. Now disable BOOTSTRAP and remove this route.", 200
+
+
 # --- ONE-TIME AUTO MIGRATION ON BOOT (for Render free tier) ---
 if os.getenv("AUTO_MIGRATE", "0") == "1":
     try:
@@ -309,6 +332,4 @@ if os.getenv("AUTO_MIGRATE", "0") == "1":
 
 # ---------- Run ----------
 if __name__ == "__main__":
-    # with app.app_context():
-    #     db.create_all()
     app.run(debug=True)
