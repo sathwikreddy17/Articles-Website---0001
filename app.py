@@ -22,6 +22,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_migrate import Migrate
 from functools import wraps
 
+
 load_dotenv()
 
 app = Flask(__name__)
@@ -50,6 +51,24 @@ login_manager.login_view = "login"  # where to send anonymous users
 login_manager.login_message_category = "warning"
 
 migrate = Migrate(app, db)
+
+
+# ---------- CLI Commands ----------
+@app.cli.command("create-admin")
+@click.argument("email")
+@click.argument("password")
+def create_admin(email, password):
+    """Creates a new admin user."""
+    if User.query.filter_by(email=email).first():
+        print(f"Error: User with email {email} already exists.")
+        return
+
+    user = User(email=email, is_admin=True)
+    user.set_password(password)
+
+    db.session.add(user)
+    db.session.commit()
+    print(f"Admin user {email} created successfully.")
 
 
 # ---------- Models ----------
