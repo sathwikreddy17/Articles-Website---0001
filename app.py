@@ -266,51 +266,6 @@ def healthz():
     return "ok", 200
 
 
-@app.route("/__bootstrap_once")
-def __bootstrap_once():
-    # Only run if explicitly enabled
-    if os.getenv("BOOTSTRAP", "0") != "1":
-        print("BOOTSTRAP is not 1. Aborting.")
-        abort(404)
-
-    admin_email = os.getenv("ADMIN_EMAIL")
-    admin_password = os.getenv("ADMIN_PASSWORD")
-    if not admin_email or not admin_password:
-        return "Missing ADMIN_EMAIL/ADMIN_PASSWORD env vars", 500
-
-    # Create admin if missing
-    if not User.query.filter_by(email=admin_email).first():
-        print(f"Creating admin user: {admin_email}")
-        user = User(email=admin_email, is_admin=True)
-        user.set_password(admin_password)
-        db.session.add(user)
-    else:
-        print(f"Admin user {admin_email} already exists.")
-
-    # Seed a couple articles if table is empty
-    if Article.query.count() == 0:
-        print("Seeding articles...")
-        demo = Article(
-            title="Hello, Render!",
-            body="# Deployed!\n\nThis is **Markdown**. 🎉\n\n```python\nprint('hi')\n```",
-            tags="demo,render,first",
-        )
-        demo.slug = unique_slug(demo.title)
-        db.session.add(demo)
-
-        demo2 = Article(
-            title="Second Post",
-            body="Some more content.\n\n- tags\n- markdown",
-            tags="notes",
-        )
-        demo2.slug = unique_slug(demo2.title)
-        db.session.add(demo2)
-
-    db.session.commit()
-    print("Bootstrap complete.")
-    return "✅ Bootstrap complete. Now disable BOOTSTRAP and remove this route.", 200
-
-
 # --- ONE-TIME AUTO MIGRATION ON BOOT (for Render free tier) ---
 if os.getenv("AUTO_MIGRATE", "0") == "1":
     try:
