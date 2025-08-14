@@ -12,23 +12,64 @@
 {% endblock %}
 
 {% block content %}
-<article class="mb-4">
-  <header class="mb-3">
-    <h1 class="mb-2">{{ article.title }}</h1>
-    {% if article.tags %}
-      <div>
-        {% for t in article.tags.split(',') %}
-          <a class="badge bg-secondary text-decoration-none" href="{{ url_for('main.by_tag', tag=t.strip()) }}">{{ t.strip() }}</a>
-        {% endfor %}
-      </div>
+<div class="row">
+  <div class="col-lg-8">
+    <article class="mb-4">
+      <header class="mb-3">
+        <h1 class="mb-2">{{ article.title }}</h1>
+        {% if article.tags %}
+          <div>
+            {% for t in article.tags.split(',') %}
+              <a class="badge bg-secondary text-decoration-none" href="{{ url_for('main.by_tag', tag=t.strip()) }}">{{ t.strip() }}</a>
+            {% endfor %}
+          </div>
+        {% endif %}
+      </header>
+      <div class="body">{{ article.body_html|safe }}</div>
+    </article>
+    {% if current_user.is_authenticated and current_user.is_admin %}
+      <a class="btn btn-primary" href="{{ url_for('admin.edit', article_id=article.id) }}">✏️ Edit</a>
+      <form action="{{ url_for('admin.delete', article_id=article.id) }}" method="post" style="display:inline">
+        <button class="btn btn-danger" type="submit">🗑️ Delete</button>
+      </form>
     {% endif %}
-  </header>
-  <div class="body">{{ article.body_html|safe }}</div>
-</article>
-{% if current_user.is_authenticated and current_user.is_admin %}
-  <a class="btn btn-primary" href="{{ url_for('admin.edit', article_id=article.id) }}">✏️ Edit</a>
-  <form action="{{ url_for('admin.delete', article_id=article.id) }}" method="post" style="display:inline">
-    <button class="btn btn-danger" type="submit">🗑️ Delete</button>
-  </form>
-{% endif %}
+  </div>
+  <aside class="col-lg-4 d-none d-lg-block">
+    <div class="sticky-top" style="top: 6rem;">
+      <div class="card">
+        <div class="card-header">Contents</div>
+        <div class="list-group list-group-flush small" id="toc"></div>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const container = document.querySelector('.body');
+    const toc = document.getElementById('toc');
+    if (!container || !toc) return;
+    function slugify(text){
+      return text.toString().toLowerCase()
+        .trim()
+        .replace(/[^\w\s-]/g, '')
+        .replace(/[\s_-]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+    }
+    const headers = container.querySelectorAll('h2, h3');
+    headers.forEach(h => {
+      const text = h.textContent || h.innerText;
+      if (!h.id) { h.id = slugify(text); }
+      const a = document.createElement('a');
+      a.href = '#' + h.id;
+      a.className = 'list-group-item list-group-item-action';
+      a.textContent = text;
+      if (h.tagName === 'H3') a.classList.add('ps-4');
+      toc.appendChild(a);
+    });
+    if (!toc.children.length) {
+      toc.innerHTML = '<div class="list-group-item text-muted">No sections</div>';
+    }
+  });
+</script>
 {% endblock %}

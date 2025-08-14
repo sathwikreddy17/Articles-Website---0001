@@ -11,6 +11,25 @@
   </div>
 </section>
 
+{% set tags = [] %}
+{% for a in latest %}
+  {% if a.tags %}
+    {% for t in a.tags.split(',') %}
+      {% set _ = tags.append(t.strip()) %}
+    {% endfor %}
+  {% endif %}
+{% endfor %}
+{% set tags = tags|unique %}
+{% if tags %}
+  <div class="container mb-3">
+    <div class="d-flex gap-2 overflow-auto pb-2">
+      {% for t in tags %}
+        <a class="badge rounded-pill text-bg-secondary text-decoration-none" href="{{ url_for('main.by_tag', tag=t) }}">#{{ t }}</a>
+      {% endfor %}
+    </div>
+  </div>
+{% endif %}
+
 <h2 class="mb-3">Latest Articles</h2>
 <div class="row g-3">
   {% for article in latest %}

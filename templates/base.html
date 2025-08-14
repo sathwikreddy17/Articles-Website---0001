@@ -4,11 +4,13 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>{% block title %}My Articles{% endblock %}</title>
-  <!-- Bootswatch theme (toggle between Cosmo and Darkly) -->
+  <meta name="description" content="A simple blog of articles and tutorials.">
+  <meta property="og:title" content="{% block og_title %}My Articles{% endblock %}">
+  <meta property="og:description" content="{% block og_description %}Read and share knowledge.{% endblock %}">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="{{ request.url }}">
   <link id="theme-css" href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.3/dist/cosmo/bootstrap.min.css" rel="stylesheet">
-  <!-- Bootstrap Icons -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-  <!-- Pygments (GitHub) style for Markdown codehilite -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pygments-styles@0.1.0/github.min.css">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <link rel="icon" href="data:,">
@@ -22,9 +24,9 @@
     </button>
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-        <li class="nav-item"><a class="nav-link" href="{{ url_for('main.home') }}">Home</a></li>
-        <li class="nav-item"><a class="nav-link" href="{{ url_for('main.articles') }}">All Articles</a></li>
-        <li class="nav-item"><a class="nav-link" href="{{ url_for('main.about') }}">About</a></li>
+        <li class="nav-item"><a class="nav-link {% if request.endpoint=='main.home' %}active{% endif %}" href="{{ url_for('main.home') }}">Home</a></li>
+        <li class="nav-item"><a class="nav-link {% if request.endpoint in ['main.articles','main.by_tag'] %}active{% endif %}" href="{{ url_for('main.articles') }}">All Articles</a></li>
+        <li class="nav-item"><a class="nav-link {% if request.endpoint=='main.about' %}active{% endif %}" href="{{ url_for('main.about') }}">About</a></li>
       </ul>
       <form class="d-flex me-3" role="search" action="{{ url_for('main.articles') }}" method="get">
         <input class="form-control form-control-sm me-2" type="search" name="q" placeholder="Search" aria-label="Search">
@@ -38,8 +40,8 @@
           <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.create') }}"><i class="bi bi-plus-circle"></i> New</a></li>
           <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.logout') }}"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
         {% else %}
-          <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.login') }}">Login</a></li>
-          <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.register') }}">Register</a></li>
+          <li class="nav-item"><a class="nav-link {% if request.endpoint=='auth.login' %}active{% endif %}" href="{{ url_for('auth.login') }}">Login</a></li>
+          <li class="nav-item"><a class="nav-link {% if request.endpoint=='auth.register' %}active{% endif %}" href="{{ url_for('auth.register') }}">Register</a></li>
         {% endif %}
       </ul>
     </div>
@@ -66,6 +68,8 @@
 </div>
 
 <main class="container mt-3">{% block content %}{% endblock %}</main>
+
+<button id="toTop" class="btn btn-primary position-fixed" style="bottom: 2rem; right: 2rem; display:none;" aria-label="Scroll to top"><i class="bi bi-arrow-up"></i></button>
 
 <footer class="mt-5 py-4 bg-body-tertiary border-top">
   <div class="container text-center text-muted">
@@ -132,6 +136,16 @@
       wrapper.appendChild(btn);
     });
   });
+</script>
+<script>
+  // Scroll-to-top button behavior
+  (function(){
+    const btn = document.getElementById('toTop');
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 300) btn.style.display = 'inline-flex'; else btn.style.display = 'none';
+    });
+    btn && btn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+  })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
