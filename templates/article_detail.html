@@ -1,6 +1,16 @@
 {% extends "base.html" %}
 {% block title %}{{ article.title }}{% endblock %}
 
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('main.home') }}">Home</a></li>
+    <li class="breadcrumb-item"><a href="{{ url_for('main.articles') }}">All Articles</a></li>
+    <li class="breadcrumb-item active" aria-current="page">{{ article.title }}</li>
+  </ol>
+</nav>
+{% endblock %}
+
 {% block content %}
 <article class="mb-4">
   <header class="mb-3">
