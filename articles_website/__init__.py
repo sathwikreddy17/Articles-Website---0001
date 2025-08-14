@@ -55,6 +55,20 @@ def create_app():
     app.register_blueprint(auth_bp)
     app.register_blueprint(admin_bp)
 
+    # Error handlers
+    @app.errorhandler(404)
+    def handle_404(e):
+        from flask import request, render_template
+        app.logger.info(f"404 Not Found: {request.path}")
+        return render_template("errors/404.html"), 404
+
+    @app.errorhandler(500)
+    def handle_500(e):
+        from flask import request, render_template
+        # Logs full stack trace
+        app.logger.exception(f"500 Internal Server Error on {request.path}")
+        return render_template("errors/500.html"), 500
+
     # AUTO_MIGRATE block unchanged
     if os.getenv("AUTO_MIGRATE", "0") == "1":
         try:
