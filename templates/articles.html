@@ -12,14 +12,35 @@
   </div>
 
   {% if items %}
-    <ul class="list-group">
+    <div class="row g-3">
       {% for a in items %}
-        <li class="list-group-item d-flex justify-content-between align-items-center">
-          <a href="{{ url_for('main.article_by_slug', slug=a.slug) }}">{{ a.title }}</a>
-          <small class="text-muted">{{ a.tags }}</small>
-        </li>
+        <div class="col-md-6 col-lg-4">
+          <div class="card h-100 shadow-sm">
+            <div class="card-body">
+              <h5 class="card-title">
+                <a href="{{ url_for('main.article_by_slug', slug=a.slug) }}" class="stretched-link">{{ a.title }}</a>
+              </h5>
+              {% if a.tags %}
+                <div>
+                  {% for t in a.tags.split(',') %}
+                    <span class="badge bg-secondary me-1">{{ t.strip() }}</span>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      {% else %}
+        <div class="col-12">
+          <div class="alert alert-info">
+            No articles found.
+            {% if current_user.is_authenticated and current_user.is_admin %}
+              <a href="{{ url_for('admin.create') }}">Create one</a>.
+            {% endif %}
+          </div>
+        </div>
       {% endfor %}
-    </ul>
+    </div>
   {% else %}
     <p>No articles yet.
       {% if current_user.is_authenticated and current_user.is_admin %}
@@ -28,7 +49,7 @@
     </p>
   {% endif %}
 
-  <nav aria-label="Pagination">
+  <nav class="mt-3" aria-label="Pagination">
     <ul class="pagination">
       {% if has_prev %}
         <li class="page-item">

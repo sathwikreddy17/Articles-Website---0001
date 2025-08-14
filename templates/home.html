@@ -1,19 +1,35 @@
 {% extends "base.html" %}
 {% block title %}Home · My Articles{% endblock %}
 {% block content %}
-  <h1 class="mb-3">Welcome 👋</h1>
-  <p class="lead">Create articles and view them below.</p>
-  <hr>
-  <h3>Latest</h3>
-  <ul>
-    {% for article in latest %}
-      <li>
-        <a href="{{ url_for('main.article_by_slug', slug=article.slug) }}">{{ article.title }}</a>
-      </li>
-    {% else %}
-      <li>No articles yet.
-        <a href="{{ url_for('admin.create') }}">Create one</a>.
-      </li>
-    {% endfor %}
-  </ul>
+<section class="p-5 mb-4 bg-body-tertiary rounded-3">
+  <div class="container py-5">
+    <h1 class="display-5 fw-bold">Welcome to Articles</h1>
+    <p class="col-md-8 fs-5">Read and share knowledge. Explore the latest posts or write your own.</p>
+    {% if current_user.is_authenticated and current_user.is_admin %}
+      <a class="btn btn-primary btn-lg" href="{{ url_for('admin.create') }}"><i class="bi bi-plus-circle"></i> New Article</a>
+    {% endif %}
+  </div>
+</section>
+
+<h2 class="mb-3">Latest Articles</h2>
+<div class="row g-3">
+  {% for article in latest %}
+    <div class="col-md-6 col-lg-4">
+      <div class="card h-100 shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title"><a href="{{ url_for('main.article_by_slug', slug=article.slug) }}" class="stretched-link">{{ article.title }}</a></h5>
+          {% if article.tags %}
+          <div>
+            {% for t in article.tags.split(',') %}
+              <span class="badge bg-secondary me-1">{{ t.strip() }}</span>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  {% else %}
+    <div class="col-12"><div class="alert alert-info">No articles yet. {% if current_user.is_authenticated and current_user.is_admin %}<a href="{{ url_for('admin.create') }}">Create one</a>.{% endif %}</div></div>
+  {% endfor %}
+</div>
 {% endblock %}
