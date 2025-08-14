@@ -1,52 +1,13 @@
 import os
-import re
-from unicodedata import normalize
-from typing import Optional
-from flask import Flask, render_template, redirect, url_for, request, flash, abort
-from flask_sqlalchemy import SQLAlchemy
-from flask_login import (
-    LoginManager,
-    login_user,
-    logout_user,
-    login_required,
-    current_user,
-    UserMixin,
-)
-from flask_migrate import Migrate
-from werkzeug.security import generate_password_hash, check_password_hash
+from flask import Flask, render_template, redirect, url_for, request, flash
+from dotenv import load_dotenv
 import markdown
 from markdown.extensions.codehilite import CodeHiliteExtension
-from dotenv import load_dotenv
-
-# Load environment variables (support instance/.env for local dev)
-load_dotenv()  # project root .env if present
-
-# Global extensions (initialized without app; bound in create_app)
-db = SQLAlchemy()
-login_manager = LoginManager()
-migrate = Migrate()
-
-
-# ---------- Models ----------
-class Article(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(200), nullable=False)
-    body = db.Column(db.Text, nullable=False)
-    tags = db.Column(db.String(255))
-    slug = db.Column(db.String(255), unique=True, nullable=False)
-
-
-class User(db.Model, UserMixin):
-    id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(255), unique=True, nullable=False)
-    password_hash = db.Column(db.String(255), nullable=False)
-    is_admin = db.Column(db.Boolean, nullable=False, default=False)
-
-    def set_password(self, password: str):
-        self.password_hash = generate_password_hash(password, method="pbkdf2:sha256")
-
-    def check_password(self, password: str) -> bool:
-        return check_password_hash(self.password_hash, password)
+from flask_login import current_user, login_user, logout_user, login_required
+from .extensions import db, login_manager, migrate
+from .forms import ArticleForm, RegisterForm, LoginForm
+from .helpers import admin_required, unique_slug
+from .models import Article, User
 
 
 @login_manager.user_loader
@@ -54,71 +15,9 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 
-# ---------- Forms ----------
-from flask_wtf import FlaskForm
-from wtforms import StringField, TextAreaField, PasswordField, BooleanField
-from wtforms.validators import DataRequired, Length, Email, EqualTo
-
-
-class ArticleForm(FlaskForm):
-    title = StringField("Title", validators=[DataRequired(), Length(max=200)])
-    tags = StringField("Tags (comma-separated)")
-    body = TextAreaField("Body", validators=[DataRequired()])
-
-
-class RegisterForm(FlaskForm):
-    email = StringField("Email", validators=[DataRequired(), Email()])
-    password = PasswordField("Password", validators=[DataRequired(), Length(min=6)])
-    confirm = PasswordField("Confirm password", validators=[DataRequired(), EqualTo("password")])
-
-
-class LoginForm(FlaskForm):
-    email = StringField("Email", validators=[DataRequired(), Email()])
-    password = PasswordField("Password", validators=[DataRequired()])
-    remember = BooleanField("Remember me")
-
-
-# ---------- Helpers ----------
-from functools import wraps
-
-
-def slugify(text: str) -> str:
-    text = normalize("NFKD", text).encode("ascii", "ignore").decode("ascii")
-    text = re.sub(r"[^\w\s-]", "", text).strip().lower()
-    text = re.sub(r"[-\s]+", "-", text)
-    return text or "post"
-
-
-def unique_slug(title: str, existing_id: Optional[int] = None) -> str:
-    base = slugify(title)
-    slug = base
-    n = 2
-    while True:
-        q = Article.query.filter_by(slug=slug)
-        if existing_id:
-            q = q.filter(Article.id != existing_id)
-        if q.first() is None:
-            return slug
-        slug = f"{base}-{n}"
-        n += 1
-
-
-def admin_required(f):
-    @wraps(f)
-    @login_required
-    def wrapper(*args, **kwargs):
-        if not current_user.is_admin:
-            abort(403)
-        return f(*args, **kwargs)
-
-    return wrapper
-
-
-# ---------- Application Factory ----------
 def create_app():
-    # Resolve project root to locate templates/static and instance/.env reliably
     project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
-    # Also load instance/.env if present
+    load_dotenv()
     load_dotenv(os.path.join(project_root, "instance", ".env"))
 
     app = Flask(
@@ -127,7 +26,7 @@ def create_app():
         static_folder=os.path.join(project_root, "static"),
     )
 
-    # Configuration
+    # Config
     app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev-secret-change-later")
     uri = os.getenv("DATABASE_URL", "sqlite:///site.db")
     if uri.startswith("postgres://"):
@@ -151,7 +50,7 @@ def create_app():
     login_manager.login_message_category = "warning"
     migrate.init_app(app, db)
 
-    # Routes (kept inline to avoid blueprint switch in Phase 1)
+    # Routes
     @app.route("/")
     def home():
         latest = Article.query.order_by(Article.id.desc()).limit(5).all()
@@ -176,8 +75,7 @@ def create_app():
 
     @app.route("/article/<int:article_id>")
     def article_detail(article_id):
-        article = Article.query.get_or_404(article_id)
-        return redirect(url_for("article_by_slug", slug=article.slug or article.id))
+        return redirect(url_for("article_by_slug", slug=Article.query.get_or_404(article_id).slug))
 
     @app.route("/create", methods=["GET", "POST"])
     @admin_required
@@ -271,7 +169,6 @@ def create_app():
     def healthz():
         return ("ok", 200)
 
-    # One-time auto migration on boot (kept behaviorally identical)
     if os.getenv("AUTO_MIGRATE", "0") == "1":
         try:
             print("🛠 AUTO_MIGRATE=1 -> running Alembic upgrade() ...")
