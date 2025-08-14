@@ -4,8 +4,8 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>{% block title %}My Articles{% endblock %}</title>
-  <!-- Bootswatch Cosmo theme (Bootstrap 5.3.3 compatible) -->
-  <link href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.3/dist/cosmo/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootswatch theme (toggle between Cosmo and Darkly) -->
+  <link id="theme-css" href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.3/dist/cosmo/bootstrap.min.css" rel="stylesheet">
   <!-- Bootstrap Icons -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
@@ -24,7 +24,10 @@
         <li class="nav-item"><a class="nav-link" href="{{ url_for('main.articles') }}">All Articles</a></li>
         <li class="nav-item"><a class="nav-link" href="{{ url_for('main.about') }}">About</a></li>
       </ul>
-      <ul class="navbar-nav ms-auto">
+      <ul class="navbar-nav ms-auto align-items-lg-center">
+        <li class="nav-item me-2">
+          <button id="theme-toggle" class="btn btn-sm btn-outline-light" type="button"><i class="bi bi-moon"></i> <span class="d-none d-sm-inline">Dark</span></button>
+        </li>
         {% if current_user.is_authenticated and current_user.is_admin %}
           <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.create') }}"><i class="bi bi-plus-circle"></i> New</a></li>
           <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.logout') }}"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
@@ -60,6 +63,31 @@
   </div>
 </footer>
 
+<script>
+  (function() {
+    const css = document.getElementById('theme-css');
+    const toggleBtn = document.getElementById('theme-toggle');
+    const themes = {
+      light: 'https://cdn.jsdelivr.net/npm/bootswatch@5.3.3/dist/cosmo/bootstrap.min.css',
+      dark: 'https://cdn.jsdelivr.net/npm/bootswatch@5.3.3/dist/darkly/bootstrap.min.css'
+    };
+    function setTheme(mode) {
+      css.href = themes[mode] || themes.light;
+      localStorage.setItem('theme', mode);
+      if (toggleBtn) {
+        toggleBtn.innerHTML = mode === 'dark' ? '<i class="bi bi-sun"></i> <span class="d-none d-sm-inline">Light</span>' : '<i class="bi bi-moon"></i> <span class="d-none d-sm-inline">Dark</span>';
+      }
+    }
+    const saved = localStorage.getItem('theme');
+    if (saved === 'dark') setTheme('dark');
+    if (toggleBtn) {
+      toggleBtn.addEventListener('click', function() {
+        const current = (localStorage.getItem('theme') || 'light');
+        setTheme(current === 'light' ? 'dark' : 'light');
+      });
+    }
+  })();
+</script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
