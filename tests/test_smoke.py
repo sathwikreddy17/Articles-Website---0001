@@ -1,4 +1,5 @@
 import os
+import tempfile
 import pytest
 from articles_website import create_app
 
@@ -6,14 +7,18 @@ from articles_website import create_app
 @pytest.fixture()
 def app():
     os.environ.setdefault("SECRET_KEY", "test-secret")
-    os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
-    os.environ.setdefault("ARTICLES_PER_PAGE", "5")
-    app = create_app()
-    app.config.update(TESTING=True)
-    with app.app_context():
-        from articles_website.extensions import db
-        db.create_all()
-        yield app
+    # Use a temporary file-based SQLite DB to avoid in-memory connection issues in tests
+    with tempfile.TemporaryDirectory() as tmpdir:
+        os.environ["DATABASE_URL"] = f"sqlite:///{os.path.join(tmpdir, 'test.db')}"
+        os.environ.setdefault("ARTICLES_PER_PAGE", "5")
+        app = create_app()
+        app.config.update(TESTING=True)
+        with app.app_context():
+            from articles_website.extensions import db
+
+            db.create_all()
+            yield app
+        # TemporaryDirectory cleans up automatically
 
 
 @pytest.fixture()
@@ -34,6 +39,11 @@ def test_articles_ok(client):
 def test_search_redirects_without_q(client):
     res = client.get("/search", follow_redirects=False)
     assert res.status_code in (301, 302)
+
+
+def test_search_ok_with_q(client):
+    res = client.get("/search?q=test")
+    assert res.status_code == 200
 
 
 def test_tags_page_ok_empty(client):

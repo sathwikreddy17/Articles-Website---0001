@@ -3,7 +3,6 @@ from flask import Flask
 from dotenv import load_dotenv
 from .extensions import db, login_manager, migrate
 from .models import User
-from flask_login import current_user
 
 
 @login_manager.user_loader
@@ -61,12 +60,14 @@ def create_app():
     @app.errorhandler(404)
     def handle_404(e):
         from flask import request, render_template
+
         app.logger.info(f"404 Not Found: {request.path}")
         return render_template("errors/404.html"), 404
 
     @app.errorhandler(500)
     def handle_500(e):
         from flask import request, render_template
+
         # Logs full stack trace
         app.logger.exception(f"500 Internal Server Error on {request.path}")
         return render_template("errors/500.html"), 500
@@ -76,6 +77,7 @@ def create_app():
         try:
             print("🛠 AUTO_MIGRATE=1 -> running Alembic upgrade() ...")
             from flask_migrate import upgrade as _upgrade
+
             with app.app_context():
                 _upgrade()
                 print("✅ Auto-migration complete.")

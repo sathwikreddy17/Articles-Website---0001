@@ -68,10 +68,7 @@ def by_tag(tag):
     per_page_default = current_app.config.get("ARTICLES_PER_PAGE", 10)
     per_page = request.args.get("per_page", default=per_page_default, type=int)
 
-    query = (
-        Article.query.filter(Article.tags.ilike(f"%{tag}%"))
-        .order_by(Article.id.desc())
-    )
+    query = Article.query.filter(Article.tags.ilike(f"%{tag}%")).order_by(Article.id.desc())
     total = query.count()
     items = query.offset((page - 1) * per_page).limit(per_page).all()
 
@@ -96,21 +93,19 @@ def search():
     q = (request.args.get("q", "") or "").strip()
     if not q:
         from flask import redirect, url_for
+
         return redirect(url_for("main.articles"))
 
     page = request.args.get("page", default=1, type=int)
     per_page_default = current_app.config.get("ARTICLES_PER_PAGE", 10)
     per_page = request.args.get("per_page", default=per_page_default, type=int)
 
-    query = (
-        Article.query.filter(
-            or_(
-                Article.title.ilike(f"%{q}%"),
-                Article.body.ilike(f"%{q}%"),
-            )
+    query = Article.query.filter(
+        or_(
+            Article.title.ilike(f"%{q}%"),
+            Article.body.ilike(f"%{q}%"),
         )
-        .order_by(Article.id.desc())
-    )
+    ).order_by(Article.id.desc())
     total = query.count()
     items = query.offset((page - 1) * per_page).limit(per_page).all()
 
