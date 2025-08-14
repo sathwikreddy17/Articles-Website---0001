@@ -29,7 +29,7 @@
         <li class="nav-item"><a class="nav-link {% if request.endpoint=='main.about' %}active{% endif %}" href="{{ url_for('main.about') }}">About</a></li>
       </ul>
       <form class="d-flex me-3" role="search" action="{{ url_for('main.search') }}" method="get">
-        <input class="form-control form-control-sm me-2" type="search" name="q" placeholder="Search" aria-label="Search">
+        <input class="form-control form-control-sm me-2" type="search" name="q" placeholder="Search" aria-label="Search" value="{{ request.args.get('q', '') }}">
         <button class="btn btn-sm btn-outline-light" type="submit"><i class="bi bi-search"></i></button>
       </form>
       <ul class="navbar-nav ms-auto align-items-lg-center">

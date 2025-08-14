@@ -28,6 +28,21 @@ def unique_slug(title: str, existing_id: Optional[int] = None) -> str:
         n += 1
 
 
+def normalize_tags(tags: Optional[str]) -> str:
+    """Normalize comma-separated tags: trim, lowercase, deduplicate, preserve order."""
+    if not tags:
+        return ""
+    seen = set()
+    result = []
+    for raw in tags.split(","):
+        t = raw.strip().lower()
+        if not t or t in seen:
+            continue
+        seen.add(t)
+        result.append(t)
+    return ", ".join(result)
+
+
 def admin_required(f):
     @wraps(f)
     @login_required

@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash
 from ..forms import ArticleForm
 from ..models import Article
 from ..extensions import db
-from ..helpers import admin_required, unique_slug
+from ..helpers import admin_required, unique_slug, normalize_tags
 
 bp = Blueprint("admin", __name__)
 
@@ -15,7 +15,7 @@ def create():
         article = Article(
             title=form.title.data.strip(),
             body=form.body.data.strip(),
-            tags=form.tags.data.strip(),
+            tags=normalize_tags(form.tags.data),
         )
         article.slug = unique_slug(article.title)
         db.session.add(article)
@@ -33,7 +33,7 @@ def edit(article_id):
     if form.validate_on_submit():
         new_title = form.title.data.strip()
         article.title = new_title
-        article.tags = form.tags.data.strip()
+        article.tags = normalize_tags(form.tags.data)
         article.body = form.body.data.strip()
         article.slug = unique_slug(new_title, existing_id=article.id)
         db.session.commit()

@@ -41,7 +41,8 @@
               {% if a.tags %}
                 <div>
                   {% for t in a.tags.split(',') %}
-                    <span class="badge bg-secondary me-1">{{ t.strip() }}</span>
+                    {% set tag = t.strip() %}
+                    <a class="badge bg-secondary text-decoration-none me-1" href="{{ url_for('main.by_tag', tag=tag) }}">{{ tag }}</a>
                   {% endfor %}
                 </div>
               {% endif %}
