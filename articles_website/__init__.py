@@ -31,6 +31,8 @@ def create_app():
         uri = uri.replace("postgresql://", "postgresql+psycopg://", 1)
     app.config["SQLALCHEMY_DATABASE_URI"] = uri
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    # Default pagination size (can override via env ARTICLES_PER_PAGE)
+    app.config.setdefault("ARTICLES_PER_PAGE", int(os.getenv("ARTICLES_PER_PAGE", "10")))
 
     if os.getenv("FLASK_ENV") == "production":
         app.config.update(

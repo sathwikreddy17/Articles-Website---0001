@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template
+from flask import Blueprint, render_template, request, current_app
 from ..models import Article
 import markdown
 from markdown.extensions.codehilite import CodeHiliteExtension
@@ -19,8 +19,27 @@ def about():
 
 @bp.route("/articles")
 def articles():
-    items = Article.query.order_by(Article.id.desc()).all()
-    return render_template("articles.html", items=items)
+    # Pagination
+    page = request.args.get("page", default=1, type=int)
+    per_page_default = current_app.config.get("ARTICLES_PER_PAGE", 10)
+    per_page = request.args.get("per_page", default=per_page_default, type=int)
+
+    query = Article.query.order_by(Article.id.desc())
+    total = query.count()
+    items = query.offset((page - 1) * per_page).limit(per_page).all()
+
+    has_prev = page > 1
+    has_next = page * per_page < total
+
+    return render_template(
+        "articles.html",
+        items=items,
+        page=page,
+        per_page=per_page,
+        total=total,
+        has_prev=has_prev,
+        has_next=has_next,
+    )
 
 
 @bp.route("/a/<slug>")

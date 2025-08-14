@@ -27,4 +27,32 @@
       {% endif %}
     </p>
   {% endif %}
+
+  <nav aria-label="Pagination">
+    <ul class="pagination">
+      {% if has_prev %}
+        <li class="page-item">
+          <a class="page-link" href="{{ url_for('main.articles', page=page-1, per_page=per_page) }}">Previous</a>
+        </li>
+      {% else %}
+        <li class="page-item disabled">
+          <span class="page-link">Previous</span>
+        </li>
+      {% endif %}
+
+      <li class="page-item disabled">
+        <span class="page-link">Page {{ page }}</span>
+      </li>
+
+      {% if has_next %}
+        <li class="page-item">
+          <a class="page-link" href="{{ url_for('main.articles', page=page+1, per_page=per_page) }}">Next</a>
+        </li>
+      {% else %}
+        <li class="page-item disabled">
+          <span class="page-link">Next</span>
+        </li>
+      {% endif %}
+    </ul>
+  </nav>
 {% endblock %}
