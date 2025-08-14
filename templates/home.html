@@ -8,17 +8,11 @@
   <ul>
     {% for article in latest %}
       <li>
-        {% if article.slug %}
-          <a href="{{ url_for('article_by_slug', slug=article.slug) }}">{{ article.title }}</a>
-        {% else %}
-          <a href="{{ url_for('article_detail', article_id=article.id) }}">{{ article.title }}</a>
-        {% endif %}
+        <a href="{{ url_for('main.article_by_slug', slug=article.slug) }}">{{ article.title }}</a>
       </li>
     {% else %}
       <li>No articles yet.
-        {% if current_user.is_authenticated %}
-          <a href="{{ url_for('create') }}">Create one</a>.
-        {% endif %}
+        <a href="{{ url_for('admin.create') }}">Create one</a>.
       </li>
     {% endfor %}
   </ul>

@@ -9,21 +9,20 @@
   <link rel="icon" href="data:,">
 </head>
 <body class="bg-light">
-<nav class="navbar navbar-dark bg-dark mb-4">
-  <div class="container">
-    <a class="navbar-brand" href="{{ url_for('home') }}">Articles</a>
-    <ul class="navbar-nav flex-row gap-3">
-      <li class="nav-item"><a class="nav-link" href="{{ url_for('home') }}">Home</a></li>
-      <li class="nav-item"><a class="nav-link" href="{{ url_for('articles') }}">All Articles</a></li>
-      <li class="nav-item"><a class="nav-link" href="{{ url_for('about') }}">About</a></li>
+<nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="{{ url_for('main.home') }}">Articles</a>
+    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+      <li class="nav-item"><a class="nav-link" href="{{ url_for('main.home') }}">Home</a></li>
+      <li class="nav-item"><a class="nav-link" href="{{ url_for('main.articles') }}">All Articles</a></li>
+      <li class="nav-item"><a class="nav-link" href="{{ url_for('main.about') }}">About</a></li>
 
-      {% if current_user.is_authenticated %}
-        <li class="nav-item"><a class="nav-link" href="{{ url_for('create') }}">New</a></li>
-        <li class="nav-item"><span class="navbar-text text-white-50">Hi, {{ current_user.email }}</span></li>
-        <li class="nav-item"><a class="nav-link" href="{{ url_for('logout') }}">Logout</a></li>
+      {% if current_user.is_authenticated and current_user.is_admin %}
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.create') }}">New</a></li>
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.logout') }}">Logout</a></li>
       {% else %}
-        <li class="nav-item"><a class="nav-link" href="{{ url_for('login') }}">Login</a></li>
-        <li class="nav-item"><a class="nav-link" href="{{ url_for('register') }}">Register</a></li>
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.login') }}">Login</a></li>
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.register') }}">Register</a></li>
       {% endif %}
     </ul>
   </div>

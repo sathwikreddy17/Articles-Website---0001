@@ -7,7 +7,7 @@
       <h6 class="text-muted">Tag: {{ active_tag }}</h6>
     {% endif %}
     {% if current_user.is_authenticated and current_user.is_admin %}
-      <a class="btn btn-primary" href="{{ url_for('create') }}">New Article</a>
+      <a class="btn btn-primary" href="{{ url_for('admin.create') }}">New Article</a>
     {% endif %}
   </div>
 
@@ -15,15 +15,15 @@
     <ul class="list-group">
       {% for a in items %}
         <li class="list-group-item d-flex justify-content-between align-items-center">
-          <a href="{{ url_for('article_by_slug', slug=a.slug) if a.slug else url_for('article_detail', article_id=a.id) }}">{{ a.title }}</a>
+          <a href="{{ url_for('main.article_by_slug', slug=a.slug) }}">{{ a.title }}</a>
           <small class="text-muted">{{ a.tags }}</small>
         </li>
       {% endfor %}
     </ul>
   {% else %}
     <p>No articles yet.
-      {% if current_user.is_authenticated %}
-        <a href="{{ url_for('create') }}">Create one</a>.
+      {% if current_user.is_authenticated and current_user.is_admin %}
+        <a href="{{ url_for('admin.create') }}">Create one</a>.
       {% endif %}
     </p>
   {% endif %}
