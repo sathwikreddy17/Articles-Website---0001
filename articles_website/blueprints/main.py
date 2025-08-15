@@ -1,8 +1,7 @@
 from flask import Blueprint, render_template, request, current_app
 from ..models import Article
-import markdown
-from markdown.extensions.codehilite import CodeHiliteExtension
 from sqlalchemy import or_
+from ..helpers import render_markdown_safe
 
 bp = Blueprint("main", __name__)
 
@@ -46,9 +45,7 @@ def articles():
 @bp.route("/a/<slug>")
 def article_by_slug(slug):
     article = Article.query.filter_by(slug=slug).first_or_404()
-    article.body_html = markdown.markdown(
-        article.body, extensions=["fenced_code", CodeHiliteExtension(linenums=False)]
-    )
+    article.body_html = render_markdown_safe(article.body)
     return render_template("article_detail.html", article=article)
 
 

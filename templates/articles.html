@@ -36,8 +36,13 @@
           <div class="card h-100 shadow-sm">
             <div class="card-body">
               <h5 class="card-title">
-                <a href="{{ url_for('main.article_by_slug', slug=a.slug) }}" class="stretched-link">{{ a.title }}</a>
+                <a href="{{ url_for('main.article_by_slug', slug=a.slug) }}" class="stretched-link">{% if q %}{{ a.title|highlight(q) }}{% else %}{{ a.title }}{% endif %}</a>
               </h5>
+              {% if q %}
+                <p class="card-text small text-muted">
+                  {{ (a.body[:160] ~ ('...' if a.body|length > 160 else ''))|highlight(q) }}
+                </p>
+              {% endif %}
               {% if a.tags %}
                 <div>
                   {% for t in a.tags.split(',') %}

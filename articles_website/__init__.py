@@ -3,6 +3,7 @@ from flask import Flask
 from dotenv import load_dotenv
 from .extensions import db, login_manager, migrate
 from .models import User
+from .helpers import highlight
 
 
 @login_manager.user_loader
@@ -46,6 +47,9 @@ def create_app():
     login_manager.login_view = "auth.login"
     login_manager.login_message_category = "warning"
     migrate.init_app(app, db)
+
+    # Jinja filters
+    app.jinja_env.filters["highlight"] = highlight
 
     # Register blueprints (no prefixes to preserve URLs)
     from .blueprints.main import bp as main_bp
