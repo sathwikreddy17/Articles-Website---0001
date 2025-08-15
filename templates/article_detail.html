@@ -12,15 +12,6 @@
 {% endblock %}
 
 {% block content %}
-{% if article.cover_image %}
-  <div class="mb-4">
-    <picture>
-      <source srcset="{{ article.cover_image | replace('.jpg', '.webp') | replace('.png', '.webp') }}" type="image/webp">
-      <img src="{{ article.cover_image }}" alt="Cover image for {{ article.title }}" class="w-100 rounded" loading="lazy"
-           style="aspect-ratio: 21/9; object-fit: cover; filter: blur(10px); opacity: .9;" onload="this.style.filter='none'; this.style.opacity='1';">
-    </picture>
-  </div>
-{% endif %}
 <div class="row">
   <div class="col-lg-8">
     <article class="mb-4">

@@ -10,8 +10,6 @@ class Article(db.Model):
     body = db.Column(db.Text, nullable=False)
     tags = db.Column(db.String(255))
     slug = db.Column(db.String(255), unique=True, nullable=False)
-    # New: relative path under static for cover image, e.g., 'uploads/<uuid>.jpg'
-    cover_image = db.Column(db.String(255))
 
 
 class User(db.Model, UserMixin):
