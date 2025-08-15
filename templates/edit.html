@@ -16,6 +16,14 @@
     </div>
 
     <div class="mb-3">
+      {{ form.cover_image.label(class="form-label") }}
+      {{ form.cover_image(class="form-control", placeholder="https://... or /static/uploads/..") }}
+      {% if article.cover_image %}
+        <div class="form-text">Current: <a href="{{ article.cover_image }}" target="_blank" rel="noopener">{{ article.cover_image }}</a></div>
+      {% endif %}
+    </div>
+
+    <div class="mb-3">
       {{ form.body.label(class="form-label") }}
       {{ form.body(class="form-control", rows=10) }}
     </div>

@@ -16,6 +16,7 @@ def create():
             title=form.title.data.strip(),
             body=form.body.data.strip(),
             tags=normalize_tags(form.tags.data),
+            cover_image=(form.cover_image.data or "").strip() or None,
         )
         article.slug = unique_slug(article.title)
         db.session.add(article)
@@ -35,6 +36,7 @@ def edit(article_id):
         article.title = new_title
         article.tags = normalize_tags(form.tags.data)
         article.body = form.body.data.strip()
+        article.cover_image = (form.cover_image.data or "").strip() or None
         article.slug = unique_slug(new_title, existing_id=article.id)
         db.session.commit()
         flash("Article updated!", "success")

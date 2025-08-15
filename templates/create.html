@@ -14,6 +14,11 @@
       <div class="form-text">Example: python, flask</div>
     </div>
     <div class="mb-3">
+      {{ form.cover_image.label(class="form-label") }}
+      {{ form.cover_image(class="form-control", placeholder="https://... or /static/uploads/..") }}
+      <div class="form-text">Optional. Absolute URL or a path under /static.</div>
+    </div>
+    <div class="mb-3">
       {{ form.body.label(class="form-label") }}
       {{ form.body(class="form-control", rows=10) }}
     </div>

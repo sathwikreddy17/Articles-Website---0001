@@ -31,7 +31,34 @@
 
   {% if items %}
     <div id="grid-container">
-      {% include 'partials/_article_cards.html' %}
+      <div class="row g-3 articles-grid">
+        {% for a in items %}
+          <div class="col-sm-6 col-lg-4 article-card">
+            <div class="card h-100 shadow-sm">
+              {% if a.cover_image %}
+              <picture>
+                <source srcset="{{ a.cover_image | replace('.jpg', '.webp') | replace('.png', '.webp') }}" type="image/webp">
+                <img src="{{ a.cover_image }}" class="card-img-top" alt="Cover image for {{ a.title }}" loading="lazy" style="aspect-ratio: 16/9; object-fit: cover; filter: blur(8px); opacity: 0.8;" onload="this.style.filter='none'; this.style.opacity='1';">
+              </picture>
+              {% endif %}
+              <div class="card-body">
+                <h5 class="card-title"><a href="{{ url_for('main.article_by_slug', slug=a.slug) }}" class="stretched-link">{% if q %}{{ a.title|highlight(q) }}{% else %}{{ a.title }}{% endif %}</a></h5>
+                {% if q %}
+                  <p class="card-text small text-muted">{{ (a.body[:180] ~ ('...' if a.body|length > 180 else ''))|highlight(q) }}</p>
+                {% endif %}
+                {% if a.tags %}
+                  <div>
+                    {% for t in a.tags.split(',') %}
+                      {% set tag = t.strip() %}
+                      <a class="badge bg-secondary text-decoration-none me-1" href="{{ url_for('main.by_tag', tag=tag) }}">{{ tag }}</a>
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
     </div>
 
     {% set total_pages = (total // per_page) + (1 if total % per_page else 0) %}
