@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from .extensions import db, login_manager, migrate
 from .models import User
 from .helpers import highlight
+from .config import DevelopmentConfig, TestingConfig, ProductionConfig
 
 
 @login_manager.user_loader
@@ -22,24 +23,18 @@ def create_app():
         static_folder=os.path.join(project_root, "static"),
     )
 
-    # Config
-    app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev-secret-change-later")
-    uri = os.getenv("DATABASE_URL", "sqlite:///site.db")
-    if uri.startswith("postgres://"):
-        uri = uri.replace("postgres://", "postgresql+psycopg://", 1)
-    elif uri.startswith("postgresql://"):
-        uri = uri.replace("postgresql://", "postgresql+psycopg://", 1)
-    app.config["SQLALCHEMY_DATABASE_URI"] = uri
-    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-    # Default pagination size (can override via env ARTICLES_PER_PAGE)
-    app.config.setdefault("ARTICLES_PER_PAGE", int(os.getenv("ARTICLES_PER_PAGE", "10")))
-
-    if os.getenv("FLASK_ENV") == "production":
-        app.config.update(
-            SESSION_COOKIE_SECURE=True,
-            SESSION_COOKIE_HTTPONLY=True,
-            SESSION_COOKIE_SAMESITE="Lax",
+    # Config selection
+    cfg_name = os.getenv("FLASK_CONFIG")
+    if not cfg_name:
+        cfg_name = (
+            "ProductionConfig" if os.getenv("FLASK_ENV") == "production" else "DevelopmentConfig"
         )
+    mapping = {
+        "DevelopmentConfig": DevelopmentConfig,
+        "TestingConfig": TestingConfig,
+        "ProductionConfig": ProductionConfig,
+    }
+    app.config.from_object(mapping.get(cfg_name, DevelopmentConfig))
 
     # Init extensions
     db.init_app(app)

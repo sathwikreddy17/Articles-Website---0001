@@ -7,6 +7,7 @@ from articles_website import create_app
 @pytest.fixture()
 def app():
     os.environ.setdefault("SECRET_KEY", "test-secret")
+    os.environ["FLASK_CONFIG"] = "TestingConfig"
     # Use a temporary file-based SQLite DB to avoid in-memory connection issues in tests
     with tempfile.TemporaryDirectory() as tmpdir:
         os.environ["DATABASE_URL"] = f"sqlite:///{os.path.join(tmpdir, 'test.db')}"
