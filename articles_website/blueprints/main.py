@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, current_app
+from flask import Blueprint, render_template, request, current_app, url_for, Response
 from ..models import Article
 from sqlalchemy import or_
 from ..helpers import render_markdown_safe
@@ -53,7 +53,7 @@ def article_by_slug(slug):
 def article_detail(article_id):
     article = Article.query.get_or_404(article_id)
     # keep redirect to slug URL behavior identical
-    from flask import redirect, url_for
+    from flask import redirect
 
     return redirect(url_for("main.article_by_slug", slug=article.slug or article.id))
 
@@ -65,7 +65,10 @@ def by_tag(tag):
     per_page_default = current_app.config.get("ARTICLES_PER_PAGE", 10)
     per_page = request.args.get("per_page", default=per_page_default, type=int)
 
-    query = Article.query.filter(Article.tags.ilike(f"%{tag}%")).order_by(Article.id.desc())
+    query = (
+        Article.query.filter(Article.tags.ilike(f"%{tag}%"))
+        .order_by(Article.id.desc())
+    )
     total = query.count()
     items = query.offset((page - 1) * per_page).limit(per_page).all()
 
@@ -89,20 +92,22 @@ def search():
     # Simple title/body search with pagination
     q = (request.args.get("q", "") or "").strip()
     if not q:
-        from flask import redirect, url_for
-
+        from flask import redirect
         return redirect(url_for("main.articles"))
 
     page = request.args.get("page", default=1, type=int)
     per_page_default = current_app.config.get("ARTICLES_PER_PAGE", 10)
     per_page = request.args.get("per_page", default=per_page_default, type=int)
 
-    query = Article.query.filter(
-        or_(
-            Article.title.ilike(f"%{q}%"),
-            Article.body.ilike(f"%{q}%"),
+    query = (
+        Article.query.filter(
+            or_(
+                Article.title.ilike(f"%{q}%"),
+                Article.body.ilike(f"%{q}%"),
+            )
         )
-    ).order_by(Article.id.desc())
+        .order_by(Article.id.desc())
+    )
     total = query.count()
     items = query.offset((page - 1) * per_page).limit(per_page).all()
 
@@ -119,6 +124,69 @@ def search():
         has_next=has_next,
         q=q,
     )
+
+
+@bp.route("/robots.txt")
+def robots_txt():
+    sitemap_url = url_for("main.sitemap", _external=True)
+    content = f"""User-agent: *
+Allow: /
+Sitemap: {sitemap_url}
+"""
+    return Response(content, mimetype="text/plain")
+
+
+@bp.route("/sitemap.xml")
+def sitemap():
+    # Build a simple sitemap including key pages and all article slugs
+    urls = [
+        url_for("main.home", _external=True),
+        url_for("main.articles", _external=True),
+        url_for("main.about", _external=True),
+    ]
+    for (slug,) in Article.query.with_entities(Article.slug).order_by(Article.id.desc()).all():
+        urls.append(url_for("main.article_by_slug", slug=slug, _external=True))
+
+    xml_parts = [
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+    ]
+    for u in urls:
+        xml_parts.append(f"  <url><loc>{u}</loc></url>")
+    xml_parts.append("</urlset>")
+
+    return Response("\n".join(xml_parts), mimetype="application/xml")
+
+
+@bp.route("/feed.xml")
+def feed():
+    # Simple RSS 2.0 feed with latest 20 articles
+    items = (
+        Article.query.order_by(Article.id.desc()).limit(20).all()
+    )
+    site_url = url_for("main.home", _external=True)
+    xml_parts = [
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
+        "<rss version=\"2.0\">",
+        "<channel>",
+        f"  <title>Articles Feed</title>",
+        f"  <link>{site_url}</link>",
+        f"  <description>Latest articles</description>",
+    ]
+    for a in items:
+        link = url_for("main.article_by_slug", slug=a.slug, _external=True)
+        title = a.title
+        desc = (a.body[:200] + ("..." if len(a.body) > 200 else "")).replace("&", "&amp;")
+        xml_parts += [
+            "  <item>",
+            f"    <title>{title}</title>",
+            f"    <link>{link}</link>",
+            f"    <guid>{link}</guid>",
+            f"    <description>{desc}</description>",
+            "  </item>",
+        ]
+    xml_parts += ["</channel>", "</rss>"]
+    return Response("\n".join(xml_parts), mimetype="application/rss+xml")
 
 
 @bp.route("/healthz")
