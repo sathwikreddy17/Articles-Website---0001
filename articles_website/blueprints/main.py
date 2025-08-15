@@ -31,6 +31,15 @@ def articles():
     has_prev = page > 1
     has_next = page * per_page < total
 
+    # Partial fragment for infinite scroll
+    if request.args.get("partial") == "1" or request.headers.get("HX-Request"):
+        return render_template(
+            "partials/_article_cards.html",
+            items=items,
+            q=None,
+            active_tag=None,
+        )
+
     return render_template(
         "articles.html",
         items=items,
@@ -75,6 +84,15 @@ def by_tag(tag):
     has_prev = page > 1
     has_next = page * per_page < total
 
+    # Partial fragment for infinite scroll
+    if request.args.get("partial") == "1" or request.headers.get("HX-Request"):
+        return render_template(
+            "partials/_article_cards.html",
+            items=items,
+            q=None,
+            active_tag=tag,
+        )
+
     return render_template(
         "articles.html",
         items=items,
@@ -114,6 +132,15 @@ def search():
     has_prev = page > 1
     has_next = page * per_page < total
 
+    # Partial fragment for infinite scroll
+    if request.args.get("partial") == "1" or request.headers.get("HX-Request"):
+        return render_template(
+            "partials/_article_cards.html",
+            items=items,
+            q=q,
+            active_tag=None,
+        )
+
     return render_template(
         "articles.html",
         items=items,
@@ -124,6 +151,23 @@ def search():
         has_next=has_next,
         q=q,
     )
+
+
+@bp.get("/search/suggest")
+def search_suggest():
+    # Lightweight suggestions for HTMX dropdown
+    q = (request.args.get("q", "") or "").strip()
+    if not q:
+        return render_template("partials/_suggestions.html", suggestions=[], q=q)
+    suggestions = (
+        Article.query.filter(
+            or_(Article.title.ilike(f"%{q}%"), Article.body.ilike(f"%{q}%"))
+        )
+        .order_by(Article.id.desc())
+        .limit(5)
+        .all()
+    )
+    return render_template("partials/_suggestions.html", suggestions=suggestions, q=q)
 
 
 @bp.route("/robots.txt")

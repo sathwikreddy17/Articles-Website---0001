@@ -30,76 +30,59 @@
   </div>
 
   {% if items %}
-    <div class="row g-3">
-      {% for a in items %}
-        <div class="col-md-6 col-lg-4">
-          <div class="card h-100 shadow-sm">
-            <div class="card-body">
-              <h5 class="card-title">
-                <a href="{{ url_for('main.article_by_slug', slug=a.slug) }}" class="stretched-link">{% if q %}{{ a.title|highlight(q) }}{% else %}{{ a.title }}{% endif %}</a>
-              </h5>
-              {% if q %}
-                <p class="card-text small text-muted">
-                  {{ (a.body[:160] ~ ('...' if a.body|length > 160 else ''))|highlight(q) }}
-                </p>
-              {% endif %}
-              {% if a.tags %}
-                <div>
-                  {% for t in a.tags.split(',') %}
-                    {% set tag = t.strip() %}
-                    <a class="badge bg-secondary text-decoration-none me-1" href="{{ url_for('main.by_tag', tag=tag) }}">{{ tag }}</a>
-                  {% endfor %}
-                </div>
-              {% endif %}
-            </div>
-          </div>
+    <div id="grid-container">
+      {% include 'partials/_article_cards.html' %}
+    </div>
+
+    {% set total_pages = (total // per_page) + (1 if total % per_page else 0) %}
+    {% if total_pages > 1 %}
+      <div class="d-grid mt-3">
+        <button id="loadMore" class="btn btn-outline-primary"
+                hx-get="{% if q %}{{ url_for('main.search', q=q, page=page+1, per_page=per_page) }}{% elif active_tag %}{{ url_for('main.by_tag', tag=active_tag, page=page+1, per_page=per_page) }}{% else %}{{ url_for('main.articles', page=page+1, per_page=per_page) }}{% endif %}&partial=1"
+                hx-target="#grid-container .articles-grid"
+                hx-swap="beforeend"
+                hx-indicator="#loadSpinner"
+                {% if page >= total_pages %}disabled{% endif %}>
+          Load more
+        </button>
+        <div id="loadSpinner" class="text-center small text-muted mt-2" style="display:none;" hx-ext="class-tools">Loading…</div>
+      </div>
+
+      <noscript>
+        <nav class="mt-3" aria-label="Pagination">
+          <ul class="pagination">
+            <li class="page-item {% if page <= 1 %}disabled{% endif %}">
+              <a class="page-link" href="{% if q %}{{ url_for('main.search', q=q, page=page-1, per_page=per_page) }}{% elif active_tag %}{{ url_for('main.by_tag', tag=active_tag, page=page-1, per_page=per_page) }}{% else %}{{ url_for('main.articles', page=page-1, per_page=per_page) }}{% endif %}">Previous</a>
+            </li>
+            {% for p in range(1, total_pages + 1) %}
+              <li class="page-item {% if p == page %}active{% endif %}">
+                <a class="page-link" href="{% if q %}{{ url_for('main.search', q=q, page=p, per_page=per_page) }}{% elif active_tag %}{{ url_for('main.by_tag', tag=active_tag, page=p, per_page=per_page) }}{% else %}{{ url_for('main.articles', page=p, per_page=per_page) }}{% endif %}">{{ p }}</a>
+              </li>
+            {% endfor %}
+            <li class="page-item {% if page >= total_pages %}disabled{% endif %}">
+              <a class="page-link" href="{% if q %}{{ url_for('main.search', q=q, page=page+1, per_page=per_page) }}{% elif active_tag %}{{ url_for('main.by_tag', tag=active_tag, page=page+1, per_page=per_page) }}{% else %}{{ url_for('main.articles', page=page+1, per_page=per_page) }}{% endif %}">Next</a>
+            </li>
+          </ul>
+        </nav>
+      </noscript>
+    {% endif %}
+  {% else %}
+    <div class="alert alert-info">
+      No articles found.
+      {% if q %}
+        <div class="mt-2 small">
+          Try:
+          <ul class="mb-0">
+            <li>Checking spelling or simpler keywords</li>
+            <li>Browsing <a href="{{ url_for('main.articles') }}">all articles</a></li>
+            <li>Exploring tags from the <a href="{{ url_for('main.home') }}">home</a> page</li>
+          </ul>
         </div>
       {% else %}
-        <div class="col-12">
-          <div class="alert alert-info">
-            No articles found.
-            {% if q %}
-              <div class="mt-2 small">
-                Try:
-                <ul class="mb-0">
-                  <li>Checking spelling or simpler keywords</li>
-                  <li>Browsing <a href="{{ url_for('main.articles') }}">all articles</a></li>
-                  <li>Exploring tags from the <a href="{{ url_for('main.home') }}">home</a> page</li>
-                </ul>
-              </div>
-            {% else %}
-              {% if current_user.is_authenticated and current_user.is_admin %}
-                <a href="{{ url_for('admin.create') }}">Create one</a>.
-              {% endif %}
-            {% endif %}
-          </div>
-        </div>
-      {% endfor %}
-    </div>
-  {% else %}
-    <p>No articles yet.
-      {% if current_user.is_authenticated and current_user.is_admin %}
-        <a href="{{ url_for('admin.create') }}">Create one</a>.
+        {% if current_user.is_authenticated and current_user.is_admin %}
+          <a href="{{ url_for('admin.create') }}">Create one</a>.
+        {% endif %}
       {% endif %}
-    </p>
-  {% endif %}
-
-  {% set total_pages = (total // per_page) + (1 if total % per_page else 0) %}
-  {% if total_pages > 1 %}
-  <nav class="mt-3" aria-label="Pagination">
-    <ul class="pagination">
-      <li class="page-item {% if page <= 1 %}disabled{% endif %}">
-        <a class="page-link" href="{% if q %}{{ url_for('main.search', q=q, page=page-1, per_page=per_page) }}{% elif active_tag %}{{ url_for('main.by_tag', tag=active_tag, page=page-1, per_page=per_page) }}{% else %}{{ url_for('main.articles', page=page-1, per_page=per_page) }}{% endif %}">Previous</a>
-      </li>
-      {% for p in range(1, total_pages + 1) %}
-        <li class="page-item {% if p == page %}active{% endif %}">
-          <a class="page-link" href="{% if q %}{{ url_for('main.search', q=q, page=p, per_page=per_page) }}{% elif active_tag %}{{ url_for('main.by_tag', tag=active_tag, page=p, per_page=per_page) }}{% else %}{{ url_for('main.articles', page=p, per_page=per_page) }}{% endif %}">{{ p }}</a>
-        </li>
-      {% endfor %}
-      <li class="page-item {% if page >= total_pages %}disabled{% endif %}">
-        <a class="page-link" href="{% if q %}{{ url_for('main.search', q=q, page=page+1, per_page=per_page) }}{% elif active_tag %}{{ url_for('main.by_tag', tag=active_tag, page=page+1, per_page=per_page) }}{% else %}{{ url_for('main.articles', page=page+1, per_page=per_page) }}{% endif %}">Next</a>
-      </li>
-    </ul>
-  </nav>
+    </div>
   {% endif %}
 {% endblock %}

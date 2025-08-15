@@ -1,0 +1,13 @@
+/* Masonry grid adjustments */
+.articles-grid { opacity: 1; transition: opacity .2s ease-in-out; }
+.article-card { break-inside: avoid; }
+
+/* Suggestions dropdown alignment */
+#suggestions { position: absolute; top: 100%; left: 0; }
+#suggestions .list-group-item a { display: block; }
+
+/* Code copy button visual */
+.code-copy-btn { backdrop-filter: blur(2px); }
+
+/* Scroll-to-top */
+#toTop { box-shadow: 0 0.5rem 1rem rgba(0,0,0,.15); }
