@@ -25,7 +25,7 @@
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav me-auto mb-2 mb-lg-0">
         <li class="nav-item"><a class="nav-link {% if request.endpoint=='main.home' %}active{% endif %}" href="{{ url_for('main.home') }}">Home</a></li>
-        <li class="nav-item"><a class="nav-link {% if request.endpoint in ['main.articles','main.by_tag'] %}active{% endif %}" href="{{ url_for('main.articles') }}">All Articles</a></li>
+        <li class="nav-item"><a class="nav-link {% if request.endpoint in ['main.articles','main.by_tag','main.search'] %}active{% endif %}" href="{{ url_for('main.articles') }}">All Articles</a></li>
         <li class="nav-item"><a class="nav-link {% if request.endpoint=='main.about' %}active{% endif %}" href="{{ url_for('main.about') }}">About</a></li>
       </ul>
       <form class="d-flex me-3" role="search" action="{{ url_for('main.search') }}" method="get">

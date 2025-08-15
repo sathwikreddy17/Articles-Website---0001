@@ -58,8 +58,19 @@
         <div class="col-12">
           <div class="alert alert-info">
             No articles found.
-            {% if current_user.is_authenticated and current_user.is_admin %}
-              <a href="{{ url_for('admin.create') }}">Create one</a>.
+            {% if q %}
+              <div class="mt-2 small">
+                Try:
+                <ul class="mb-0">
+                  <li>Checking spelling or simpler keywords</li>
+                  <li>Browsing <a href="{{ url_for('main.articles') }}">all articles</a></li>
+                  <li>Exploring tags from the <a href="{{ url_for('main.home') }}">home</a> page</li>
+                </ul>
+              </div>
+            {% else %}
+              {% if current_user.is_authenticated and current_user.is_admin %}
+                <a href="{{ url_for('admin.create') }}">Create one</a>.
+              {% endif %}
             {% endif %}
           </div>
         </div>
