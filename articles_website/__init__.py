@@ -5,6 +5,7 @@ from .extensions import db, login_manager, migrate
 from .models import User
 from .helpers import highlight
 from .config import DevelopmentConfig, TestingConfig, ProductionConfig
+from sqlalchemy import text, inspect
 
 
 @login_manager.user_loader
@@ -43,6 +44,28 @@ def create_app():
     login_manager.login_message_category = "warning"
     migrate.init_app(app, db)
 
+    # Ensure cover_image column exists (safety net in prod)
+    with app.app_context():
+        try:
+            with db.engine.begin() as conn:
+                dialect = conn.dialect.name
+                if dialect == "postgresql":
+                    conn.execute(text("ALTER TABLE IF EXISTS public.article ADD COLUMN IF NOT EXISTS cover_image VARCHAR(255)"))
+                    app.logger.info("SAFETY: ensured article.cover_image on PostgreSQL")
+                elif dialect == "sqlite":
+                    cols = [row[1] for row in conn.execute(text("PRAGMA table_info(article)"))]
+                    if "cover_image" not in cols:
+                        conn.execute(text("ALTER TABLE article ADD COLUMN cover_image VARCHAR(255)"))
+                        app.logger.info("SAFETY: added article.cover_image on SQLite")
+                else:
+                    inspector = inspect(conn)
+                    cols = [c["name"] for c in inspector.get_columns("article")]
+                    if "cover_image" not in cols:
+                        conn.execute(text("ALTER TABLE article ADD COLUMN cover_image VARCHAR(255)"))
+                        app.logger.info(f"SAFETY: added article.cover_image on {dialect}")
+        except Exception as e:
+            app.logger.exception(f"SAFETY check failed: {e}")
+
     # Jinja filters
     app.jinja_env.filters["highlight"] = highlight
 
@@ -67,7 +90,6 @@ def create_app():
     def handle_500(e):
         from flask import request, render_template
 
-        # Logs full stack trace
         app.logger.exception(f"500 Internal Server Error on {request.path}")
         return render_template("errors/500.html"), 500
 
