@@ -9,6 +9,7 @@
   <meta property="og:description" content="{% block og_description %}Read and share knowledge.{% endblock %}">
   <meta property="og:type" content="website">
   <meta property="og:url" content="{{ request.url }}">
+  <link rel="canonical" href="{{ canonical_url }}">
   <link id="theme-css" href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.3/dist/cosmo/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pygments-styles@0.1.0/github.min.css">
@@ -31,6 +32,7 @@
       <ul class="navbar-nav me-auto mb-2 mb-lg-0">
         <li class="nav-item"><a class="nav-link {% if request.endpoint=='main.home' %}active{% endif %}" href="{{ url_for('main.home') }}">Home</a></li>
         <li class="nav-item"><a class="nav-link {% if request.endpoint in ['main.articles','main.by_tag','main.search'] %}active{% endif %}" href="{{ url_for('main.articles') }}">All Articles</a></li>
+        <li class="nav-item"><a class="nav-link {% if request.endpoint=='main.tags_index' %}active{% endif %}" href="{{ url_for('main.tags_index') }}">Tags</a></li>
         <li class="nav-item"><a class="nav-link {% if request.endpoint=='main.about' %}active{% endif %}" href="{{ url_for('main.about') }}">About</a></li>
       </ul>
       <form class="d-flex me-3 position-relative" role="search" action="{{ url_for('main.search') }}" method="get">

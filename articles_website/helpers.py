@@ -11,6 +11,7 @@ import markdown
 from markdown.extensions.codehilite import CodeHiliteExtension
 import bleach
 from markupsafe import Markup, escape
+import math
 
 
 def slugify(text: str) -> str:
@@ -47,6 +48,16 @@ def normalize_tags(tags: Optional[str]) -> str:
         seen.add(t)
         result.append(t)
     return ", ".join(result)
+
+
+def tags_contains_draft(tags: Optional[str]) -> bool:
+    """Return True if the special tag 'draft' is present in the comma-separated tags string."""
+    if not tags:
+        return False
+    for raw in tags.split(","):
+        if raw.strip().lower() == "draft":
+            return True
+    return False
 
 
 # Allowlist for Bleach: keep typical Markdown output and codehilite wrappers
@@ -123,6 +134,16 @@ def highlight(text: str, query: str) -> Markup:
 
     result = pattern.sub(_repl, str(escaped))
     return Markup(result)
+
+
+def reading_time(text: Optional[str]) -> str:
+    """Rudimentary reading time at ~200 wpm; returns e.g. '5 min read'."""
+    if not text:
+        return "1 min read"
+    # Count words
+    words = len(re.findall(r"\w+", text))
+    minutes = max(1, math.ceil(words / 200.0))
+    return f"{minutes} min read"
 
 
 def admin_required(f):

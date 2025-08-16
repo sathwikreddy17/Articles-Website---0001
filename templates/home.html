@@ -15,7 +15,9 @@
 {% for a in latest %}
   {% if a.tags %}
     {% for t in a.tags.split(',') %}
-      {% set _ = tags.append(t.strip()) %}
+      {% if t.strip().lower() != 'draft' %}
+        {% set _ = tags.append(t.strip()) %}
+      {% endif %}
     {% endfor %}
   {% endif %}
 {% endfor %}
@@ -36,11 +38,18 @@
     <div class="col-md-6 col-lg-4">
       <div class="card h-100 shadow-sm">
         <div class="card-body">
-          <h5 class="card-title"><a href="{{ url_for('main.article_by_slug', slug=article.slug) }}" class="stretched-link">{{ article.title }}</a></h5>
+          <div class="d-flex justify-content-between align-items-start">
+            <h5 class="card-title"><a href="{{ url_for('main.article_by_slug', slug=article.slug) }}" class="stretched-link">{{ article.title }}</a></h5>
+            {% if is_draft(article.tags) %}<span class="badge text-bg-warning">Draft</span>{% endif %}
+          </div>
+          <p class="small text-muted mb-2">{{ article.body|reading_time }}</p>
           {% if article.tags %}
           <div>
             {% for t in article.tags.split(',') %}
-              <span class="badge bg-secondary me-1">{{ t.strip() }}</span>
+              {% set tag = t.strip() %}
+              {% if tag and tag|lower != 'draft' %}
+                <span class="badge bg-secondary me-1">{{ tag }}</span>
+              {% endif %}
             {% endfor %}
           </div>
           {% endif %}

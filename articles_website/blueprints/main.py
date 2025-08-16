@@ -8,13 +8,35 @@ bp = Blueprint("main", __name__)
 
 @bp.route("/")
 def home():
-    latest = Article.query.order_by(Article.id.desc()).limit(5).all()
+    latest = (
+        Article.query.filter(~Article.tags.ilike("%draft%") | (Article.tags == None))
+        .order_by(Article.id.desc())
+        .limit(5)
+        .all()
+    )
     return render_template("home.html", latest=latest)
 
 
 @bp.route("/about")
 def about():
     return render_template("about.html")
+
+
+@bp.route("/tags")
+def tags_index():
+    # Build tag list with counts (simple scan; OK for small dataset)
+    rows = Article.query.with_entities(Article.tags).all()
+    counts = {}
+    for (tagstr,) in rows:
+        if not tagstr:
+            continue
+        for raw in tagstr.split(","):
+            t = raw.strip().lower()
+            if not t or t == "draft":
+                continue
+            counts[t] = counts.get(t, 0) + 1
+    tags = sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))
+    return render_template("tags.html", tags=tags)
 
 
 @bp.route("/articles")
@@ -24,7 +46,11 @@ def articles():
     per_page_default = current_app.config.get("ARTICLES_PER_PAGE", 10)
     per_page = request.args.get("per_page", default=per_page_default, type=int)
 
-    query = Article.query.order_by(Article.id.desc())
+    query = (
+        Article.query
+        .filter(~Article.tags.ilike("%draft%") | (Article.tags == None))
+        .order_by(Article.id.desc())
+    )
     total = query.count()
     items = query.offset((page - 1) * per_page).limit(per_page).all()
 
@@ -76,6 +102,7 @@ def by_tag(tag):
 
     query = (
         Article.query.filter(Article.tags.ilike(f"%{tag}%"))
+        .filter(~Article.tags.ilike("%draft%") | (Article.tags == None))
         .order_by(Article.id.desc())
     )
     total = query.count()
@@ -124,6 +151,7 @@ def search():
                 Article.body.ilike(f"%{q}%"),
             )
         )
+        .filter(~Article.tags.ilike("%draft%") | (Article.tags == None))
         .order_by(Article.id.desc())
     )
     total = query.count()
@@ -163,6 +191,7 @@ def search_suggest():
         Article.query.filter(
             or_(Article.title.ilike(f"%{q}%"), Article.body.ilike(f"%{q}%"))
         )
+        .filter(~Article.tags.ilike("%draft%") | (Article.tags == None))
         .order_by(Article.id.desc())
         .limit(5)
         .all()
@@ -187,6 +216,7 @@ def sitemap():
         url_for("main.home", _external=True),
         url_for("main.articles", _external=True),
         url_for("main.about", _external=True),
+        url_for("main.tags_index", _external=True),
     ]
     for (slug,) in Article.query.with_entities(Article.slug).order_by(Article.id.desc()).all():
         urls.append(url_for("main.article_by_slug", slug=slug, _external=True))
@@ -206,7 +236,11 @@ def sitemap():
 def feed():
     # Simple RSS 2.0 feed with latest 20 articles
     items = (
-        Article.query.order_by(Article.id.desc()).limit(20).all()
+        Article.query
+        .filter(~Article.tags.ilike("%draft%") | (Article.tags == None))
+        .order_by(Article.id.desc())
+        .limit(20)
+        .all()
     )
     site_url = url_for("main.home", _external=True)
     xml_parts = [

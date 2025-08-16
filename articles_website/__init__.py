@@ -3,7 +3,7 @@ from flask import Flask
 from dotenv import load_dotenv
 from .extensions import db, login_manager, migrate
 from .models import User
-from .helpers import highlight
+from .helpers import highlight, reading_time, tags_contains_draft
 from .config import DevelopmentConfig, TestingConfig, ProductionConfig
 
 
@@ -43,8 +43,18 @@ def create_app():
     login_manager.login_message_category = "warning"
     migrate.init_app(app, db)
 
-    # Jinja filters
+    # Jinja filters and globals
     app.jinja_env.filters["highlight"] = highlight
+    app.jinja_env.filters["reading_time"] = reading_time
+    app.jinja_env.globals["is_draft"] = tags_contains_draft
+
+    # Canonical URL helper
+    @app.context_processor
+    def inject_canonical():
+        from flask import request, url_for
+
+        canonical = request.base_url
+        return {"canonical_url": canonical}
 
     # Register blueprints (no prefixes to preserve URLs)
     from .blueprints.main import bp as main_bp
