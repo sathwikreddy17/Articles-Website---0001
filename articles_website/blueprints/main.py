@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, current_app, url_for, Response
+from flask import Blueprint, render_template, request, current_app, url_for, Response, jsonify
 from ..models import Article
 from sqlalchemy import or_
 from ..helpers import render_markdown_safe, tags_contains_draft
@@ -283,3 +283,24 @@ def feed():
 @limiter.exempt
 def healthz():
     return ("ok", 200)
+
+
+@bp.get("/search_index.json")
+@limiter.limit("60/minute; 2000/day")
+def search_index():
+    # Lightweight index for Command Palette (excludes draft-tagged articles)
+    rows = (
+        Article.query
+        .with_entities(Article.title, Article.slug, Article.tags)
+        .filter(~Article.tags.ilike("%draft%") | (Article.tags == None))
+        .order_by(Article.id.desc())
+        .all()
+    )
+    data = []
+    for title, slug, tags in rows:
+        data.append({
+            "title": title,
+            "url": url_for("main.article_by_slug", slug=slug),
+            "tags": [t.strip() for t in (tags.split(",") if tags else []) if t.strip().lower() != "draft"],
+        })
+    return jsonify(data)

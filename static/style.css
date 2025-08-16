@@ -11,3 +11,20 @@
 
 /* Scroll-to-top */
 #toTop { box-shadow: 0 0.5rem 1rem rgba(0,0,0,.15); }
+
+/* View Transitions fallback fades */
+::view-transition-old(root), ::view-transition-new(root) {
+  animation-duration: .25s;
+}
+
+/* Command Palette */
+.cmdk-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.35); backdrop-filter: blur(2px); z-index: 1100; display: flex; align-items: flex-start; justify-content: center; padding-top: 10vh; }
+.cmdk-modal { width: min(720px, 92vw); background: var(--bs-body-bg); color: var(--bs-body-color); border-radius: .75rem; box-shadow: 0 1rem 3rem rgba(0,0,0,.2); overflow: hidden; border: 1px solid var(--bs-border-color); }
+.cmdk-input-wrap { display: flex; align-items: center; gap: .25rem; padding: .75rem 1rem; border-bottom: 1px solid var(--bs-border-color); }
+#cmdk-input { flex: 1; border: 0; outline: 0; background: transparent; color: inherit; font-size: 1rem; }
+#cmdk-close { margin-left: .5rem; }
+.cmdk-results { max-height: 50vh; overflow: auto; }
+.cmdk-item { display: flex; align-items: center; justify-content: space-between; padding: .6rem 1rem; text-decoration: none; color: inherit; border-bottom: 1px solid var(--bs-border-color); }
+.cmdk-item:hover, .cmdk-item.active { background: rgba(13,110,253,.08); }
+.cmdk-empty { padding: 1rem; }
+.cmdk-help { padding: .5rem 1rem; border-top: 1px solid var(--bs-border-color); }
