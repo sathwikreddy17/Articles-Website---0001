@@ -1,7 +1,7 @@
 import os
 from flask import Flask
 from dotenv import load_dotenv
-from .extensions import db, login_manager, migrate
+from .extensions import db, login_manager, migrate, limiter
 from .models import User
 from .helpers import highlight, reading_time, tags_contains_draft
 from .config import DevelopmentConfig, TestingConfig, ProductionConfig
@@ -42,6 +42,7 @@ def create_app():
     login_manager.login_view = "auth.login"
     login_manager.login_message_category = "warning"
     migrate.init_app(app, db)
+    limiter.init_app(app)
 
     # Jinja filters and globals
     app.jinja_env.filters["highlight"] = highlight
@@ -64,6 +65,14 @@ def create_app():
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(admin_bp)
+
+    # Rate limiting rules (per IP)
+    from flask import request
+
+    @app.before_request
+    def apply_endpoint_limits():
+        # lightweight: rely on default limits via decorators in future; for now, set key routes
+        pass
 
     # Error handlers
     @app.errorhandler(404)

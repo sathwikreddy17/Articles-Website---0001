@@ -1,8 +1,8 @@
-from flask import Blueprint, render_template, redirect, url_for, flash
+from flask import Blueprint, render_template, redirect, url_for, flash, request, Response
 from ..forms import ArticleForm
 from ..models import Article
-from ..extensions import db
-from ..helpers import admin_required, unique_slug, normalize_tags
+from ..extensions import db, limiter
+from ..helpers import admin_required, unique_slug, normalize_tags, render_markdown_safe
 
 bp = Blueprint("admin", __name__)
 
@@ -50,3 +50,12 @@ def delete(article_id):
     db.session.commit()
     flash("Deleted.", "info")
     return redirect(url_for("main.articles"))
+
+
+@bp.post("/preview_markdown")
+@admin_required
+@limiter.limit("60/minute")
+def preview_markdown():
+    text = request.form.get("body", "")
+    html = render_markdown_safe(text)
+    return Response(html, mimetype="text/html")

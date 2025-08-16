@@ -2,12 +2,13 @@ from flask import Blueprint, render_template, redirect, url_for, request, flash
 from flask_login import current_user, login_user, logout_user, login_required
 from ..forms import RegisterForm, LoginForm
 from ..models import User
-from ..extensions import db
+from ..extensions import db, limiter
 
 bp = Blueprint("auth", __name__)
 
 
 @bp.route("/register", methods=["GET", "POST"])
+@limiter.limit("5/minute; 50/day")
 def register():
     if current_user.is_authenticated:
         return redirect(url_for("main.articles"))
@@ -27,6 +28,7 @@ def register():
 
 
 @bp.route("/login", methods=["GET", "POST"])
+@limiter.limit("10/minute; 200/day")
 def login():
     if current_user.is_authenticated:
         return redirect(url_for("main.articles"))
@@ -45,6 +47,7 @@ def login():
 
 @bp.route("/logout")
 @login_required
+@limiter.limit("60/minute")
 def logout():
     logout_user()
     flash("Logged out.", "info")

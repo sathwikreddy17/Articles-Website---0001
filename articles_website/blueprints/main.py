@@ -1,7 +1,8 @@
 from flask import Blueprint, render_template, request, current_app, url_for, Response
 from ..models import Article
 from sqlalchemy import or_
-from ..helpers import render_markdown_safe
+from ..helpers import render_markdown_safe, tags_contains_draft
+from ..extensions import limiter
 
 bp = Blueprint("main", __name__)
 
@@ -18,11 +19,13 @@ def home():
 
 
 @bp.route("/about")
+@limiter.exempt
 def about():
     return render_template("about.html")
 
 
 @bp.route("/tags")
+@limiter.exempt
 def tags_index():
     # Build tag list with counts (simple scan; OK for small dataset)
     rows = Article.query.with_entities(Article.tags).all()
@@ -40,6 +43,7 @@ def tags_index():
 
 
 @bp.route("/articles")
+@limiter.limit("120/minute")
 def articles():
     # Pagination
     page = request.args.get("page", default=1, type=int)
@@ -78,6 +82,7 @@ def articles():
 
 
 @bp.route("/a/<slug>")
+@limiter.limit("120/minute")
 def article_by_slug(slug):
     article = Article.query.filter_by(slug=slug).first_or_404()
     article.body_html = render_markdown_safe(article.body)
@@ -85,6 +90,7 @@ def article_by_slug(slug):
 
 
 @bp.route("/article/<int:article_id>")
+@limiter.limit("120/minute")
 def article_detail(article_id):
     article = Article.query.get_or_404(article_id)
     # keep redirect to slug URL behavior identical
@@ -94,6 +100,7 @@ def article_detail(article_id):
 
 
 @bp.route("/tags/<tag>")
+@limiter.limit("120/minute")
 def by_tag(tag):
     # Add pagination for tag-filtered listing
     page = request.args.get("page", default=1, type=int)
@@ -133,6 +140,7 @@ def by_tag(tag):
 
 
 @bp.route("/search")
+@limiter.limit("30/minute; 300/day")
 def search():
     # Simple title/body search with pagination
     q = (request.args.get("q", "") or "").strip()
@@ -182,6 +190,7 @@ def search():
 
 
 @bp.get("/search/suggest")
+@limiter.limit("60/minute; 500/day")
 def search_suggest():
     # Lightweight suggestions for HTMX dropdown
     q = (request.args.get("q", "") or "").strip()
@@ -200,6 +209,7 @@ def search_suggest():
 
 
 @bp.route("/robots.txt")
+@limiter.exempt
 def robots_txt():
     sitemap_url = url_for("main.sitemap", _external=True)
     content = f"""User-agent: *
@@ -210,6 +220,7 @@ Sitemap: {sitemap_url}
 
 
 @bp.route("/sitemap.xml")
+@limiter.limit("30/minute")
 def sitemap():
     # Build a simple sitemap including key pages and all article slugs
     urls = [
@@ -233,6 +244,7 @@ def sitemap():
 
 
 @bp.route("/feed.xml")
+@limiter.limit("30/minute")
 def feed():
     # Simple RSS 2.0 feed with latest 20 articles
     items = (
@@ -268,5 +280,6 @@ def feed():
 
 
 @bp.route("/healthz")
+@limiter.exempt
 def healthz():
     return ("ok", 200)
