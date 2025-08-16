@@ -52,10 +52,19 @@ def create_app():
     # Canonical URL helper
     @app.context_processor
     def inject_canonical():
-        from flask import request, url_for
+        from flask import request
 
         canonical = request.base_url
         return {"canonical_url": canonical}
+
+    # Long cache for static assets
+    @app.after_request
+    def add_cache_headers(resp):
+        from flask import request
+
+        if request.path.startswith("/static/") and resp.status_code == 200:
+            resp.headers.setdefault("Cache-Control", "public, max-age=31536000, immutable")
+        return resp
 
     # Register blueprints (no prefixes to preserve URLs)
     from .blueprints.main import bp as main_bp
@@ -65,14 +74,6 @@ def create_app():
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(admin_bp)
-
-    # Rate limiting rules (per IP)
-    from flask import request
-
-    @app.before_request
-    def apply_endpoint_limits():
-        # lightweight: rely on default limits via decorators in future; for now, set key routes
-        pass
 
     # Error handlers
     @app.errorhandler(404)

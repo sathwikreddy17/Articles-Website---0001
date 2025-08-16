@@ -10,6 +10,8 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="{{ request.url }}">
   <link rel="canonical" href="{{ canonical_url }}">
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}">
+  <meta name="theme-color" content="#0d6efd">
   <link id="theme-css" href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.3/dist/cosmo/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pygments-styles@0.1.0/github.min.css">
@@ -181,6 +183,14 @@
       new Masonry(evt.detail.target, { itemSelector: '.article-card', percentPosition: true, transitionDuration: '0.2s' });
     }
   });
+</script>
+<script>
+  // Register a minimal service worker (if supported)
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}").catch(() => {});
+    });
+  }
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
