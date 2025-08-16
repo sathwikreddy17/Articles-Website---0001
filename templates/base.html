@@ -27,7 +27,8 @@
   {% block head_extra %}{% endblock %}
 </head>
 <body class="bg-light">
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
+<div id="read-progress"></div>
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4 glass">
   <div class="container">
     <a class="navbar-brand" href="{{ url_for('main.home') }}"><i class="bi bi-journal-text me-1"></i>Articles</a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
@@ -330,6 +331,115 @@
     function highlight(){
       Array.from(results.children).forEach((el, i)=> el.classList.toggle('active', i===active));
     }
+  })();
+</script>
+<script>
+  // Reading progress bar
+  (function(){
+    const bar = document.getElementById('read-progress');
+    if (!bar) return;
+    const update = () => {
+      const scrollTop = window.scrollY || document.documentElement.scrollTop;
+      const doc = document.documentElement;
+      const height = doc.scrollHeight - doc.clientHeight;
+      const pct = height > 0 ? Math.min(100, Math.max(0, (scrollTop / height) * 100)) : 0;
+      bar.style.width = pct + '%';
+    };
+    window.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    document.addEventListener('DOMContentLoaded', update);
+  })();
+</script>
+<script>
+  // Ripple effect for buttons
+  document.addEventListener('click', function(e){
+    const btn = e.target.closest('.btn');
+    if (!btn) return;
+    const rect = btn.getBoundingClientRect();
+    const ripple = document.createElement('span');
+    ripple.className = 'ripple';
+    ripple.style.left = (e.clientX - rect.left) + 'px';
+    ripple.style.top = (e.clientY - rect.top) + 'px';
+    btn.appendChild(ripple);
+    ripple.addEventListener('animationend', () => ripple.remove());
+  });
+</script>
+<script>
+  // Scroll reveal animations
+  (function(){
+    const markTargets = () => {
+      document.querySelectorAll('.article-card').forEach(el => el.classList.add('reveal','reveal-up'));
+    };
+    const observer = new IntersectionObserver((entries)=>{
+      entries.forEach(entry => {
+        if (entry.isIntersecting) entry.target.classList.add('revealed');
+      });
+    }, { threshold: 0.1 });
+
+    const wire = () => {
+      markTargets();
+      document.querySelectorAll('.reveal:not(.revealed)').forEach(el => observer.observe(el));
+    };
+    document.addEventListener('DOMContentLoaded', wire);
+    document.addEventListener('htmx:afterSwap', wire);
+  })();
+</script>
+<script>
+  // Image lightbox for article content
+  (function(){
+    function ensureDialog(){
+      let dlg = document.querySelector('dialog.lightbox');
+      if (dlg) return dlg;
+      dlg = document.createElement('dialog');
+      dlg.className = 'lightbox';
+      dlg.innerHTML = '<div class="lightbox-inner">\
+        <button class="lightbox-close" aria-label="Close">\u2715</button>\
+        <button class="lightbox-prev" aria-label="Previous">\u2039</button>\
+        <img class="lightbox-image" alt="">\
+        <button class="lightbox-next" aria-label="Next">\u203A</button>\
+        <div class="lightbox-caption small"></div>\
+      </div>';
+      document.body.appendChild(dlg);
+      return dlg;
+    }
+    function enableLightbox(container){
+      if (!container) return;
+      const imgs = Array.from(container.querySelectorAll('img'));
+      if (!imgs.length) return;
+      const dlg = ensureDialog();
+      const imgEl = dlg.querySelector('.lightbox-image');
+      const capEl = dlg.querySelector('.lightbox-caption');
+      let idx = 0;
+      function open(i){
+        idx = i;
+        const img = imgs[idx];
+        imgEl.src = img.currentSrc || img.src;
+        imgEl.alt = img.alt || '';
+        capEl.textContent = img.alt || '';
+        if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open','');
+      }
+      function close(){ if (dlg.open) dlg.close(); else dlg.removeAttribute('open'); }
+      function next(){ open((idx + 1) % imgs.length); }
+      function prev(){ open((idx - 1 + imgs.length) % imgs.length); }
+      imgs.forEach((im, i)=>{
+        im.style.cursor = 'zoom-in';
+        im.addEventListener('click', (e)=>{ e.preventDefault(); open(i); });
+      });
+      dlg.addEventListener('click', (e)=>{ if (e.target === dlg) close(); });
+      dlg.querySelector('.lightbox-close').addEventListener('click', close);
+      dlg.querySelector('.lightbox-next').addEventListener('click', next);
+      dlg.querySelector('.lightbox-prev').addEventListener('click', prev);
+      document.addEventListener('keydown', (e)=>{
+        if (!dlg.open) return;
+        if (e.key === 'Escape') close();
+        if (e.key === 'ArrowRight') next();
+        if (e.key === 'ArrowLeft') prev();
+      });
+    }
+    function wire(){ enableLightbox(document.querySelector('.article-body')); }
+    document.addEventListener('DOMContentLoaded', wire);
+    document.addEventListener('htmx:afterSwap', wire);
+    window.enableLightbox = enableLightbox;
   })();
 </script>
 </body>

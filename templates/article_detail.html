@@ -15,37 +15,36 @@
 </script>
 {% endblock %}
 
-{% block breadcrumbs %}
-<nav aria-label="breadcrumb">
-  <ol class="breadcrumb">
-    <li class="breadcrumb-item"><a href="{{ url_for('main.home') }}">Home</a></li>
-    <li class="breadcrumb-item"><a href="{{ url_for('main.articles') }}">All Articles</a></li>
-    <li class="breadcrumb-item active" aria-current="page">{{ article.title }}</li>
-  </ol>
-</nav>
-{% endblock %}
+{% block breadcrumbs %}{% endblock %}
 
 {% block content %}
+<div class="full-bleed article-hero py-5 mb-4">
+  <div class="container">
+    <h1 class="display-5 fw-bold mb-3">{{ article.title }}</h1>
+    <div class="d-flex flex-wrap align-items-center gap-2 text-muted mb-3">
+      <span><i class="bi bi-clock"></i> {{ article.body|reading_time }}</span>
+      <span>•</span>
+      <span><i class="bi bi-link-45deg"></i> <a class="link-light text-decoration-underline" href="{{ url_for('main.article_by_slug', slug=article.slug) }}">Permalink</a></span>
+    </div>
+    <div class="d-flex flex-wrap gap-2 mb-3">
+      <button id="copyLink" class="btn btn-sm btn-outline-light" type="button"><i class="bi bi-link-45deg"></i> Copy link</button>
+      <a class="btn btn-sm btn-outline-light" target="_blank" rel="noopener" href="https://twitter.com/intent/tweet?url={{ url_for('main.article_by_slug', slug=article.slug, _external=True) | urlencode }}&text={{ article.title | urlencode }}"><i class="bi bi-twitter-x"></i> Tweet</a>
+      <a class="btn btn-sm btn-outline-light" target="_blank" rel="noopener" href="https://www.linkedin.com/sharing/share-offsite/?url={{ url_for('main.article_by_slug', slug=article.slug, _external=True) | urlencode }}"><i class="bi bi-linkedin"></i> Share</a>
+    </div>
+    {% if article.tags %}
+      <div class="d-flex flex-wrap gap-2">
+        {% for t in article.tags.split(',') %}
+          <a class="badge rounded-pill text-bg-light text-decoration-none" href="{{ url_for('main.by_tag', tag=t.strip()) }}">{{ t.strip() }}</a>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+</div>
+
 <div class="row">
   <div class="col-lg-8">
     <article class="mb-4">
-      <header class="mb-3">
-        <h1 class="mb-2">{{ article.title }}</h1>
-        <p class="text-muted small mb-2">{{ article.body|reading_time }}</p>
-        <div class="d-flex gap-2 mb-2">
-          <button id="copyLink" class="btn btn-sm btn-outline-secondary" type="button"><i class="bi bi-link-45deg"></i> Copy link</button>
-          <a class="btn btn-sm btn-outline-primary" target="_blank" rel="noopener" href="https://twitter.com/intent/tweet?url={{ url_for('main.article_by_slug', slug=article.slug, _external=True) | urlencode }}&text={{ article.title | urlencode }}"><i class="bi bi-twitter-x"></i> Tweet</a>
-          <a class="btn btn-sm btn-outline-success" target="_blank" rel="noopener" href="https://www.linkedin.com/sharing/share-offsite/?url={{ url_for('main.article_by_slug', slug=article.slug, _external=True) | urlencode }}"><i class="bi bi-linkedin"></i> Share</a>
-        </div>
-        {% if article.tags %}
-          <div>
-            {% for t in article.tags.split(',') %}
-              <a class="badge bg-secondary text-decoration-none" href="{{ url_for('main.by_tag', tag=t.strip()) }}">{{ t.strip() }}</a>
-            {% endfor %}
-          </div>
-        {% endif %}
-      </header>
-      <div class="body">{{ article.body_html|safe }}</div>
+      <div class="article-body body">{{ article.body_html|safe }}</div>
     </article>
     {% if current_user.is_authenticated and current_user.is_admin %}
       <a class="btn btn-primary" href="{{ url_for('admin.edit', article_id=article.id) }}">✏️ Edit</a>
@@ -56,9 +55,9 @@
   </div>
   <aside class="col-lg-4 d-none d-lg-block">
     <div class="sticky-top" style="top: 6rem;">
-      <div class="card">
-        <div class="card-header">Contents</div>
-        <div class="list-group list-group-flush small" id="toc"></div>
+      <div class="margin-notes">
+        <div class="mb-2 small text-muted">Sections</div>
+        <div id="notes" class="d-flex flex-column gap-2"></div>
       </div>
     </div>
   </aside>
@@ -79,10 +78,12 @@
 </script>
 
 <script>
+  // Build margin notes from H2 headings and sync active state as you scroll
   document.addEventListener('DOMContentLoaded', function() {
-    const container = document.querySelector('.body');
-    const toc = document.getElementById('toc');
-    if (!container || !toc) return;
+    const container = document.querySelector('.article-body');
+    const notes = document.getElementById('notes');
+    if (!container || !notes) return;
+
     function slugify(text){
       return text.toString().toLowerCase()
         .trim()
@@ -90,20 +91,46 @@
         .replace(/[\s_-]+/g, '-')
         .replace(/^-+|-+$/g, '');
     }
-    const headers = container.querySelectorAll('h2, h3');
-    headers.forEach(h => {
+    const headers = Array.from(container.querySelectorAll('h2'));
+    const map = new Map();
+    headers.forEach((h, i) => {
       const text = h.textContent || h.innerText;
       if (!h.id) { h.id = slugify(text); }
       const a = document.createElement('a');
       a.href = '#' + h.id;
-      a.className = 'list-group-item list-group-item-action';
-      a.textContent = text;
-      if (h.tagName === 'H3') a.classList.add('ps-4');
-      toc.appendChild(a);
+      a.className = 'note-item link-underline link-underline-opacity-0';
+      a.innerHTML = `<div class="note"><span class="index">${i+1}</span><span class="text">${text}</span></div>`;
+      notes.appendChild(a);
+      map.set(h, a);
     });
-    if (!toc.children.length) {
-      toc.innerHTML = '<div class="list-group-item text-muted">No sections</div>';
+    if (!notes.children.length) {
+      notes.innerHTML = '<div class="text-muted">No sections</div>';
+      return;
     }
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        const el = entry.target;
+        const link = map.get(el);
+        if (link) link.classList.toggle('active', entry.isIntersecting);
+      });
+    }, { rootMargin: '0px 0px -70% 0px', threshold: 0.1 });
+    headers.forEach(h => observer.observe(h));
   });
 </script>
+
+<script>
+  // Elevate hero on scroll
+  (function(){
+    const hero = document.querySelector('.article-hero');
+    if (!hero) return;
+    const toggle = () => {
+      if (window.scrollY > hero.offsetHeight * 0.4) hero.classList.add('hero-elevated');
+      else hero.classList.remove('hero-elevated');
+    };
+    window.addEventListener('scroll', toggle, { passive: true });
+    toggle();
+  })();
+</script>
+
 {% endblock %}

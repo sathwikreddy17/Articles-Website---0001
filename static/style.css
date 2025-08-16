@@ -1,3 +1,6 @@
+/* Base typography */
+body { font-family: var(--app-font, 'Inter', system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'); }
+
 /* Masonry grid adjustments */
 .articles-grid { opacity: 1; transition: opacity .2s ease-in-out; }
 .article-card { break-inside: avoid; }
@@ -28,3 +31,110 @@
 .cmdk-item:hover, .cmdk-item.active { background: rgba(13,110,253,.08); }
 .cmdk-empty { padding: 1rem; }
 .cmdk-help { padding: .5rem 1rem; border-top: 1px solid var(--bs-border-color); }
+
+/* Aurora hero uses CSS variables for colors */
+.full-bleed.article-hero {
+  --hero-start: rgba(13,110,253,.9);
+  --hero-end: rgba(32,201,151,.9);
+  background: linear-gradient(135deg, var(--hero-start), var(--hero-end)), url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%221200%22 height=%26700%22%3E%3Cdefs%3E%3CradialGradient id=%22g%22 cx=%2250%25%22 cy=%2250%25%22 r=%2270%25%22%3E%3Cstop stop-color=%22%23fff%22 stop-opacity=%220.08%22/%3E%3Cstop offset=%221%22 stop-color=%22%23000%22 stop-opacity=%220%22/%3E%3C/radialGradient%3E%3C/defs%3E%3Crect fill=%22%23000%22 width=%221200%22 height=%26700%22/%3E%3Crect fill=%22url(%23g)%22 width=%221200%22 height=%26700%22/%3E%3C/svg%3E') center/cover no-repeat;
+  position: relative;
+}
+.full-bleed.article-hero::before {
+  content: "";
+  position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(1200px 400px at 10% 20%, rgba(255,255,255,.14), transparent 60%),
+              radial-gradient(800px 400px at 80% 40%, rgba(255,255,255,.10), transparent 60%),
+              radial-gradient(600px 600px at 50% 120%, rgba(0,0,0,.1), transparent 60%);
+  mix-blend-mode: overlay;
+  animation: auroraMove 18s ease-in-out infinite alternate;
+}
+@keyframes auroraMove {
+  0%   { transform: translate3d(0,0,0) scale(1); filter: hue-rotate(0deg) saturate(1.05); }
+  50%  { transform: translate3d(-2%,1%,0) scale(1.02); filter: hue-rotate(12deg) saturate(1.1); }
+  100% { transform: translate3d(2%,-1%,0) scale(1.01); filter: hue-rotate(-12deg) saturate(1.05); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .full-bleed.article-hero::before { animation: none; }
+}
+.full-bleed .badge { --bs-badge-padding-x: .8em; --bs-badge-padding-y: .5em; }
+
+/* Gradient headline text in hero */
+.article-hero h1 {
+  background: linear-gradient(90deg, #fff, rgba(255,255,255,.85));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  text-wrap: balance;
+}
+
+/* Reading progress bar */
+#read-progress { position: fixed; top: 0; left: 0; height: 3px; width: 0; background: var(--accent-color, #0d6efd); z-index: 1200; transition: width .1s linear; }
+
+/* Glassmorphism */
+.navbar.glass { backdrop-filter: blur(8px); background: color-mix(in hsl, var(--bs-primary) 70%, transparent); }
+.card { backdrop-filter: saturate(1.1) blur(2px); }
+
+/* Scroll reveals */
+.reveal { opacity: 0; transform: translateY(10px); transition: opacity .5s ease, transform .5s ease; }
+.reveal.revealed { opacity: 1; transform: none; }
+.reveal-up { transform: translateY(12px); }
+.reveal-left { transform: translateX(-12px); }
+.reveal-right { transform: translateX(12px); }
+
+/* Lightbox dialog */
+dialog.lightbox { border: none; padding: 0; max-width: 95vw; max-height: 90vh; background: transparent; }
+dialog.lightbox::backdrop { background: rgba(0,0,0,.6); backdrop-filter: blur(2px); }
+.lightbox-inner { position: relative; }
+.lightbox-image { max-width: 95vw; max-height: 80vh; display:block; margin:auto; border-radius: .5rem; box-shadow: 0 1rem 2rem rgba(0,0,0,.35); }
+.lightbox-caption { text-align: center; color: var(--bs-secondary-color); margin-top: .5rem; }
+.lightbox-close, .lightbox-prev, .lightbox-next {
+  position: absolute; top: .5rem; background: rgba(0,0,0,.45); color:#fff; border:0; width: 2.25rem; height: 2.25rem; border-radius: 999px; display:flex; align-items:center; justify-content:center;
+}
+.lightbox-close { right: .5rem; }
+.lightbox-prev { left: .5rem; top: 50%; transform: translateY(-50%); }
+.lightbox-next { right: .5rem; top: 50%; transform: translateY(-50%); }
+
+/* Ripple effect for buttons */
+.btn { position: relative; overflow: hidden; }
+.btn .ripple { position: absolute; border-radius: 50%; transform: scale(0); animation: ripple .6s linear; background: currentColor; opacity: .15; pointer-events: none; }
+@keyframes ripple { to { transform: scale(10); opacity: 0; } }
+
+/* Article body enhancements */
+.article-body p:first-of-type::first-letter {
+  float: none !important;
+  margin: 0 !important;
+  font-size: inherit !important;
+  line-height: inherit !important;
+  font-weight: inherit !important;
+  color: inherit !important;
+  -webkit-initial-letter: unset !important;
+  initial-letter: normal !important;
+}
+
+/* Pull quotes: use blockquote with .pull-quote */
+.article-body blockquote.pull-quote {
+  font-size: 1.25rem;
+  font-style: italic;
+  border-left: .25rem solid var(--bs-primary);
+  padding-left: 1rem;
+  color: var(--bs-secondary-color, #6c757d);
+  margin: 2rem 0;
+}
+
+/* Margin notes */
+.margin-notes { font-size: .925rem; }
+.note-item { display: block; padding: .5rem .75rem; border-radius: .5rem; color: inherit; }
+.note-item .note { display:flex; align-items:center; gap:.5rem; }
+.note-item .index { display:inline-flex; align-items:center; justify-content:center; width:1.5rem; height:1.5rem; border-radius:999px; background: var(--bs-primary); color:#fff; font-size:.8rem; }
+.note-item.active { background: rgba(13,110,253,.08); }
+
+/* Code blocks: improve wrapping and contrast */
+.codehilite { border: 1px solid var(--bs-border-color); border-radius: .5rem; overflow: auto; }
+.codehilite pre { margin: 0; padding: 1rem; white-space: pre-wrap; word-break: break-word; }
+.codehilite code { font-variant-ligatures: none; }
+
+/* Subtle hero shadow when scrolled */
+.article-hero.hero-elevated { box-shadow: 0 .75rem 1.75rem rgba(0,0,0,.15), 0 .25rem .5rem rgba(0,0,0,.08); }
+
+/* Two-column reading mode (disabled per feedback) */
+@media (min-width: 1200px) {
+  .article-body { column-count: 1; column-gap: normal; }
+}
