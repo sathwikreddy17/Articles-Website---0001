@@ -15,7 +15,7 @@
     </div>
     <div class="mb-3">
       {{ form.body.label(class="form-label") }}
-      {{ form.body(class="form-control", rows=10, id='md-body', hx-post=url_for('admin.preview_markdown'), hx-trigger='keyup changed delay:400ms', hx-target='#md-preview', hx-include='#md-body') }}
+      {{ form.body(class="form-control", rows=10, id='md-body', **{'hx-post': url_for('admin.preview_markdown'), 'hx-trigger': 'keyup changed delay:400ms', 'hx-target': '#md-preview', 'hx-include': '#md-body'}) }}
     </div>
     <div class="mb-3">
       <label class="form-label">Live Preview</label>
